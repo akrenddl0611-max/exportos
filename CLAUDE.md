@@ -35,7 +35,21 @@ ExportOS는 수출 중소기업(전남 김·수산, 무역 전담 인력 0~1명�
 - **K-SURE 개방데이터(KSURE_DATA)**: localStorage 별도 키(exportos_ksure_v1), 출고 시 빈 값(dataVersion null → "미탑재" 표시). [데이터 관리] 뷰에서 CSV 업로드→컬럼 매핑→기준일 필수→전량 저장(부분 저장 금지). isSample 샘플은 ⚠배지 필수. 90일 경과 시 갱신 권장. 모든 표시에 출처+기준일 병기. 폼 국가 입력 시 자동 표시(renderKsForm)
 - **회귀 테스트**: selfTest() 9케이스(T1~T9) 부팅 시 실행, [데이터 관리]>자체 검증에 표시. 면책 문구 DISCLAIMER 고정
 
-### 뷰 6개 (데이터 관리 포함)
+### UI 개편 (INSTRUCTION_UI개편.md / UI_설계서.md 구현 — flex 벤치마킹)
+- **그룹형 사이드바 IA**: 업무/바이어/리스크/서류·일정/인사이트/연결·지원/관리 (VIEWS 배열 16뷰) + 하단 시작 가이드 위젯
+- **홈 피드 3열**: 중앙(시작 가이드 0/4 guideSteps — 실데이터로 완료 판정 / 오늘 확인 / 최근 활동) + 우측(미니 만기 캘린더·알림·전문기관)
+- **Cmd+K 팔레트**: palActions + 거래 검색, ↑↓/Enter/Esc
+- **위험 진단 마법사(wizard)**: 3카드 준비도(바이어/결제·보험/계약 방어) + CTA → 위험 지표 탭, GUIDE.diag 기록
+- **리스크 규칙(rules)**: CORE_RULES(6종)+KB_RULES 시각화, 사용/미사용 토글(RULES_OFF → assess·kbRules 즉시 반영, 전 거래 재진단). selfTest는 전 규칙 사용 상태로 실행
+- **거래 정책(POLICY)**: 무담보 한도/신규 선수금 하한/리마인드 시점 — policyViolations()가 마법사·상세 개요·알림에 amber 경고
+- **바이어(buyers/credit)**: buyerList()로 원장에서 파생, BUYER_META에 신용조사 신청 상태, 내부 이력 결정론 집계
+- **서류함(docs)**: DOC_SLOTS 5종, d.docs[i]={st:0미등록/1등록/2확정,note} 클릭 순환
+- **회수 캘린더(calendar)** + 홈 미니 캘린더: dueMap() 기반, 지연 red/임박 amber
+- **인사이트(insights)**: 단계 퍼널 + 지표 4종(고위험 비율/부보 이행률/지연 발생률/평균 회수 소요 — d.doneAt 기반) 전부 결정론
+- **설정 드로어(openSettings)**: PROFILE(상호→인사말·기본 카테고리), 감사 로그 통합 뷰
+- 배포: GitHub Pages https://akrenddl0611-max.github.io/exportos/ (main 푸시 시 자동)
+
+### 뷰 (데이터 관리 포함)
 - 대시보드: flex식 "오늘 확인할 일"(기한 초과 할 일/7일 내/회수 지연/고위험 미조치), KPI 4종(클릭 이동), 회수 임박·지연, 단계 분포
 - **내 할 일**: 전 거래의 태스크를 기한 초과/7일 내/예정으로 그룹핑한 실행 인박스(트랙·거래 필터, 사이드바 배지) — 일일 실행은 여기, 칸반은 현황 파악용으로 이원화
 - 파이프라인: 6단계 칸반(카드=위험·D-day·현 단계 절차 진행률 바·다음 할 일), 드래그 시 게이트 작동
