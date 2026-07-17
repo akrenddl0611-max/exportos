@@ -1,0 +1,1108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>ExportOS · 수출 거래·리스크 통합 관리</title>
+<style>
+:root{
+ --pri:#2b4a9b;--pri-d:#1f3874;--pri-l:#eaf0fb;
+ --bg:#f5f6fa;--panel:#fff;--line:#e7e9f0;--ink:#1b2333;--mut:#6c7488;
+ --red:#d9482f;--red-l:#fdecea;--amber:#c9871a;--amber-l:#fdf4e3;--green:#2e8b63;--green-l:#e9f6ef;
+ --shadow:0 1px 2px rgba(20,30,60,.05),0 4px 14px rgba(20,30,60,.05);
+}
+*{box-sizing:border-box;font-family:"Pretendard","Malgun Gothic","맑은 고딕",system-ui,-apple-system,sans-serif;}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;}
+a{color:inherit;}
+/* top bar */
+.top{height:58px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:0 20px;position:sticky;top:0;z-index:30;}
+.brand{font-weight:800;font-size:18px;color:var(--pri-d);display:flex;align-items:center;gap:8px;}
+.brand .dot{width:11px;height:11px;border-radius:50%;background:var(--pri);display:inline-block;}
+.search{flex:1;max-width:420px;position:relative;}
+.search input{width:100%;padding:9px 12px 9px 34px;border:1px solid var(--line);border-radius:10px;background:#f8f9fc;font-size:13.5px;}
+.search::before{content:"🔍";position:absolute;left:11px;top:8px;font-size:13px;opacity:.5;}
+.top .sp{flex:1;}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;}
+.btn{background:var(--pri);color:#fff;border:0;padding:9px 16px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.btn:hover{background:var(--pri-d);}
+.btn.ghost{background:var(--pri-l);color:var(--pri-d);}.btn.ghost:hover{background:#dde7f8;}
+.btn.sm{padding:6px 11px;font-size:12.5px;border-radius:8px;}
+.btn.red{background:var(--red);}.btn.line{background:#fff;border:1px solid var(--line);color:var(--ink);}
+/* layout */
+.wrap{display:flex;}
+.side{width:216px;flex-shrink:0;padding:16px 12px;border-right:1px solid var(--line);background:var(--panel);min-height:calc(100vh - 58px);position:sticky;top:58px;}
+.side .grp{font-size:11px;color:#98a0b3;font-weight:700;margin:14px 10px 6px;letter-spacing:.4px;}
+.side a{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:#48506a;font-size:14px;cursor:pointer;margin-bottom:2px;font-weight:600;}
+.side a .i{width:18px;text-align:center;}
+.side a:hover{background:#f2f4f9;}
+.side a.active{background:var(--pri-l);color:var(--pri-d);}
+.side a .nb{margin-left:auto;background:var(--red);color:#fff;font-size:10.5px;font-weight:800;border-radius:10px;padding:1px 7px;}
+.side .foot{font-size:10.5px;color:#9aa1b2;margin-top:20px;padding:10px;line-height:1.55;border-top:1px solid var(--line);}
+.main{flex:1;padding:24px 28px;max-width:1340px;}
+.phead{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;}
+.phead h1{font-size:22px;margin:0;}
+.phead .d{color:var(--mut);font-size:13px;margin-top:4px;}
+/* kpi */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow);cursor:pointer;}
+.kpi .l{font-size:12.5px;color:var(--mut);display:flex;align-items:center;gap:6px;}
+.kpi .n{font-size:28px;font-weight:800;margin-top:6px;}
+.kpi.a .n{color:var(--red);}
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:var(--shadow);margin-bottom:16px;}
+.panel h2{font-size:15px;margin:0 0 14px;display:flex;align-items:center;gap:7px;}
+/* chart bars */
+.bar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;}
+.bar .lb{width:78px;color:#48506a;}
+.bar .tr{flex:1;background:#eef1f7;border-radius:6px;height:16px;overflow:hidden;}
+.bar .fl{height:100%;background:var(--pri);border-radius:6px;}
+.bar .vv{width:26px;text-align:right;font-weight:700;}
+/* board */
+.board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;align-items:start;}
+.col{background:#eef0f6;border-radius:12px;padding:10px;min-height:380px;}
+.col.drag{outline:2px dashed var(--pri);background:#e4e9f6;}
+.colh{font-size:12.5px;font-weight:800;color:#39415c;display:flex;justify-content:space-between;padding:3px 5px 10px;}
+.colh .cnt{background:#dfe4ee;border-radius:11px;padding:0 8px;font-size:11px;color:#556;}
+.card{background:#fff;border:1px solid var(--line);border-left:4px solid var(--pri);border-radius:10px;padding:11px;margin-bottom:9px;cursor:grab;box-shadow:0 1px 2px rgba(20,30,60,.04);}
+.card:hover{box-shadow:var(--shadow);}
+.card .b{font-weight:800;font-size:13.5px;}
+.card .m{color:var(--mut);font-size:11.5px;margin:3px 0 7px;}
+.card .next{font-size:11px;color:#8a4a1e;background:#fbeee4;border-radius:6px;padding:3px 7px;margin-top:7px;line-height:1.45;}
+.card.HIGH{border-left-color:var(--red);}.card.MED{border-left-color:var(--amber);}.card.LOW{border-left-color:var(--green);}
+.prog{height:5px;background:#eef1f7;border-radius:4px;margin-top:8px;overflow:hidden;}
+.prog i{display:block;height:100%;background:var(--green);border-radius:4px;}
+.prog.warn i{background:var(--amber);}
+.progl{font-size:10.5px;color:var(--mut);margin-top:4px;display:flex;justify-content:space-between;}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:800;}
+.badge.HIGH{background:var(--red-l);color:var(--red);}.badge.MED{background:var(--amber-l);color:var(--amber);}.badge.LOW{background:var(--green-l);color:var(--green);}
+.dd{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:1px 7px;margin-left:5px;}
+.dd.over{background:var(--red-l);color:var(--red);}.dd.soon{background:var(--amber-l);color:var(--amber);}.dd.ok{background:#eef1f7;color:#667;}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{text-align:left;padding:11px 10px;border-bottom:1px solid var(--line);}
+th{color:var(--mut);font-size:12px;font-weight:700;}
+tr.r{cursor:pointer;}tr.r:hover{background:#f7f9fc;}
+.toolbar{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.toolbar select,.toolbar input[type=text],.toolbar input[type=search]{padding:8px 11px;border:1px solid var(--line);border-radius:9px;font-size:13px;background:#fff;}
+/* tasks */
+.tgrp{margin-bottom:18px;}
+.tgrp h3{font-size:13px;margin:0 0 8px;color:#39415c;display:flex;align-items:center;gap:7px;}
+.tgrp h3 .cnt{background:#eef1f7;border-radius:10px;padding:0 8px;font-size:11px;color:#556;font-weight:700;}
+.trow{display:flex;align-items:center;gap:11px;padding:10px 13px;background:#fff;border:1px solid var(--line);border-radius:11px;margin-bottom:7px;transition:.1s;}
+.trow:hover{border-color:#c8d2e8;}
+.trow input[type=checkbox]{width:16px;height:16px;flex-shrink:0;cursor:pointer;}
+.trow .tt{flex:1;font-size:13.5px;font-weight:600;line-height:1.4;}
+.trow.done .tt{opacity:.45;text-decoration:line-through;}
+.trow .dc{font-size:11.5px;color:var(--pri-d);background:var(--pri-l);border-radius:7px;padding:3px 9px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.trow .dc:hover{background:#dde7f8;}
+.trk{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:#556;background:#f1f3f8;border-radius:7px;padding:2px 8px;white-space:nowrap;}
+.trk i{width:7px;height:7px;border-radius:50%;display:inline-block;}
+.req{font-size:10px;font-weight:800;color:var(--red);border:1px solid #f0c3ba;border-radius:5px;padding:0 5px;}
+/* stepper */
+.stepper{display:flex;gap:4px;margin:4px 0 16px;}
+.step{flex:1;text-align:center;font-size:11px;font-weight:700;color:#98a0b3;padding:7px 2px 8px;border-bottom:3px solid #e3e6ef;cursor:pointer;border-radius:6px 6px 0 0;}
+.step:hover{background:#f4f6fb;}
+.step.done{color:var(--green);border-bottom-color:var(--green);}
+.step.cur{color:var(--pri-d);border-bottom-color:var(--pri);background:var(--pri-l);}
+/* modal */
+.mask{position:fixed;inset:0;background:rgba(20,28,50,.5);display:none;justify-content:flex-end;z-index:60;}
+.mask.on{display:flex;}
+.sheet{background:var(--bg);width:760px;max-width:100%;height:100%;overflow:auto;box-shadow:-10px 0 40px rgba(0,0,0,.15);animation:slide .18s ease;}
+@keyframes slide{from{transform:translateX(30px);opacity:.6}to{transform:none;opacity:1}}
+.sheet .sh{position:sticky;top:0;background:var(--panel);border-bottom:1px solid var(--line);padding:16px 22px;display:flex;justify-content:space-between;align-items:flex-start;z-index:2;}
+.sheet .sb{padding:18px 22px;}
+.x{cursor:pointer;font-size:20px;color:#98a0b3;border:0;background:none;}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin:2px 22px 0;position:sticky;top:74px;background:var(--panel);z-index:2;flex-wrap:wrap;}
+.tabs button{border:0;background:none;padding:11px 11px;font-size:13.5px;color:#6b7488;cursor:pointer;font-weight:600;border-bottom:2px solid transparent;}
+.tabs button.on{color:var(--pri-d);border-bottom-color:var(--pri);}
+label{display:block;font-size:12px;color:var(--mut);margin:0 0 5px;font-weight:600;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:12px;}
+input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;border-radius:9px;font-size:14px;background:#fff;font-family:inherit;}
+.chk{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;}.chk input{width:auto;}
+.riskbox{border-radius:11px;padding:14px 16px;margin-bottom:14px;border:1px solid;}
+.riskbox.HIGH{background:var(--red-l);border-color:#f0c3ba;}.riskbox.MED{background:var(--amber-l);border-color:#eddcb0;}.riskbox.LOW{background:var(--green-l);border-color:#bfe2cd;}
+.clause{font-size:12.5px;white-space:pre-wrap;background:#f7f9fc;border:1px solid var(--line);border-radius:9px;padding:12px;line-height:1.6;max-height:220px;overflow:auto;}
+.log div{font-size:12px;color:#556;padding:5px 0;border-top:1px dashed #eef;}
+.links a{display:flex;justify-content:space-between;padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;text-decoration:none;font-size:13.5px;font-weight:600;background:#fff;}
+.links a:hover{background:#f7f9fc;}
+.mut{color:var(--mut);}.hide{display:none;}
+.ksbox{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.7;margin:6px 0 12px;}
+.pill{display:inline-block;font-size:11px;background:#eef1f7;color:#556;border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;}
+.empty{text-align:center;color:var(--mut);padding:26px;font-size:13.5px;}
+/* stage accordion in detail */
+.sacc{border:1px solid var(--line);border-radius:11px;margin-bottom:10px;background:#fff;overflow:hidden;}
+.sacc>.hd{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;font-weight:700;font-size:13px;background:#fafbfe;}
+.sacc>.hd:hover{background:#f3f5fb;}
+.sacc>.hd .st{font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;}
+.sacc>.hd .st.cur{background:var(--pri-l);color:var(--pri-d);}
+.sacc>.hd .st.done{background:var(--green-l);color:var(--green);}
+.sacc>.hd .st.todo{background:#eef1f7;color:#889;}
+.sacc>.bd{padding:8px 12px 12px;border-top:1px solid var(--line);}
+/* flex-style today hero */
+.hero{background:linear-gradient(180deg,#eef3fd,#ffffff);}
+.hero .hi{font-size:20px;font-weight:800;}
+.hero .hs{color:var(--mut);font-size:13.5px;margin-top:4px;}
+.todo{margin-top:15px;display:flex;flex-direction:column;gap:8px;}
+.ti{display:flex;align-items:center;gap:12px;padding:12px 15px;background:#fff;border:1px solid var(--line);border-radius:12px;cursor:pointer;transition:.12s;}
+.ti:hover{border-color:var(--pri);background:#fafbff;transform:translateX(2px);}
+.ti .ic{font-size:16px;}.ti .tx{flex:1;font-size:13.5px;font-weight:600;}
+.ti .cn{font-size:12px;font-weight:800;color:var(--pri-d);background:var(--pri-l);border-radius:20px;padding:3px 11px;}
+.ti .ar{color:#aeb6c8;font-weight:700;}
+/* gate dialog */
+.gmask{position:fixed;inset:0;background:rgba(20,28,50,.5);display:none;align-items:center;justify-content:center;z-index:80;}
+.gmask.on{display:flex;}
+.gbox{background:#fff;border-radius:14px;width:480px;max-width:92%;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.gbox h3{margin:0 0 8px;font-size:16px;}
+.gbox ul{margin:10px 0;padding-left:20px;font-size:13px;line-height:1.8;color:#444;max-height:200px;overflow:auto;}
+/* toast */
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#22293b;color:#fff;padding:11px 18px;border-radius:10px;font-size:13.5px;opacity:0;pointer-events:none;transition:.25s;z-index:99;}
+.toast.on{opacity:1;bottom:30px;}
+@media (max-width:1100px){.board{grid-template-columns:repeat(3,1fr);}.kpis{grid-template-columns:repeat(2,1fr);}.grid2{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="brand"><span class="dot"></span>ExportOS</div>
+  <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색" oninput="globalSearch()"></div>
+  <div class="sp"></div>
+  <button class="btn" onclick="openNew()">＋ 신규 거래</button>
+  <div class="avatar">김</div>
+</div>
+<div class="wrap">
+  <aside class="side">
+    <div class="grp">업무</div>
+    <a data-v="dash" class="active"><span class="i">▦</span> 대시보드</a>
+    <a data-v="tasks"><span class="i">☑</span> 내 할 일 <span class="nb hide" id="taskbadge"></span></a>
+    <a data-v="board"><span class="i">🗂</span> 거래 파이프라인</a>
+    <a data-v="ledger"><span class="i">▤</span> 거래원장</a>
+    <div class="grp">지원</div>
+    <a data-v="res"><span class="i">🔗</span> 자료·연결</a>
+    <a data-v="data"><span class="i">⚙</span> 데이터 관리</a>
+    <div class="foot">정보 제공·리스크 진단·권유·연결 서비스입니다. 계약 확정·서류심사·보험 인수·대금 회수 집행은 변호사·관세사·은행·K-SURE가 담당합니다. 데이터는 이 브라우저에 저장됩니다.<br><br><span style="cursor:pointer;text-decoration:underline" onclick="resetAll()">데이터 초기화</span></div>
+  </aside>
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section id="v-dash">
+      <div class="panel hero" id="today"></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid2">
+        <div class="panel"><h2>⏰ 회수 임박·지연 (우선 조치)</h2><div id="duelist"></div></div>
+        <div class="panel"><h2>단계별 거래 분포</h2><div id="stagechart"></div></div>
+      </div>
+      <div class="panel"><h2>🔴 고위험 거래</h2><div id="highlist"></div></div>
+    </section>
+    <!-- TASKS -->
+    <section id="v-tasks" class="hide">
+      <div class="phead"><div><h1>내 할 일</h1><div class="d">모든 거래의 실무 절차가 하나의 목록으로 모입니다. 체크하면 해당 거래에 기록됩니다.</div></div></div>
+      <div class="panel">
+        <div class="toolbar">
+          <input type="search" id="tq" placeholder="할 일·바이어 검색" oninput="renderTasks()">
+          <select id="tTrack" onchange="renderTasks()"><option value="">트랙 전체</option></select>
+          <select id="tDeal" onchange="renderTasks()"><option value="">거래 전체</option></select>
+          <label class="chk" style="margin:0"><input type="checkbox" id="tDone" onchange="renderTasks()"> 완료 포함</label>
+        </div>
+        <div id="tasklist"></div>
+      </div>
+    </section>
+    <!-- BOARD -->
+    <section id="v-board" class="hide">
+      <div class="phead"><div><h1>거래 파이프라인</h1><div class="d">카드를 드래그해 단계를 옮기세요. 필수 절차가 남아 있으면 이동 전에 알려드립니다. 카드 클릭 → 상세·위험 진단.</div></div></div>
+      <div class="board" id="board"></div>
+    </section>
+    <!-- LEDGER -->
+    <section id="v-ledger" class="hide">
+      <div class="phead"><div><h1>거래원장</h1><div class="d">모든 거래가 하나의 원장에 축적됩니다.</div></div></div>
+      <div class="panel">
+        <div class="toolbar">
+          <input type="search" id="q" placeholder="검색" oninput="renderLedger()">
+          <select id="fLevel" onchange="renderLedger()"><option value="">위험 전체</option><option value="HIGH">고위험</option><option value="MED">주의</option><option value="LOW">양호</option></select>
+          <select id="fStage" onchange="renderLedger()"><option value="">단계 전체</option></select>
+          <select id="fCat" onchange="renderLedger()"><option value="">품목 전체</option></select>
+          <span style="flex:1"></span>
+          <button class="btn line sm" onclick="csvTemplate()">CSV 템플릿</button>
+          <button class="btn line sm" onclick="document.getElementById('csvfile').click()">CSV 가져오기</button>
+          <input type="file" id="csvfile" accept=".csv,text/csv" class="hide" onchange="importCSV(this)">
+          <button class="btn line sm" onclick="exportJSON()">JSON 내보내기</button>
+        </div>
+        <div id="ledger"></div>
+      </div>
+    </section>
+    <!-- RESOURCES -->
+    <section id="v-res" class="hide">
+      <div class="phead"><div><h1>자료·연결</h1><div class="d">확정·집행이 필요한 업무는 전문기관으로 연결합니다.</div></div></div>
+      <div class="grid2">
+        <div class="panel"><h2>전문기관 바로가기</h2><div class="links" id="reslinks"></div></div>
+        <div class="panel"><h2>결제방식 위험 가이드</h2><div id="payguide"></div></div>
+      </div>
+      <div class="panel"><h2>🔎 품목×수입국 규칙 찾기</h2>
+        <div class="toolbar">
+          <select id="kbCat" onchange="renderKbFinder()"><option value="">카테고리 선택</option></select>
+          <input type="text" id="kbHs" placeholder="HS부호·품목 (예: 1212.21)" oninput="renderKbFinder()" style="max-width:220px">
+          <input type="text" id="kbCtry" placeholder="수입국 (예: 미국, 독일, 일본)" oninput="renderKbFinder()" style="max-width:220px">
+        </div>
+        <div id="kbout" class="mut" style="font-size:13px">카테고리·HS부호·수입국을 입력하면 해당 조합에 적용되는 통관·인증 규칙과 자동 생성될 할 일을 미리 볼 수 있습니다.</div>
+      </div>
+      <div class="panel"><h2>품목별 통관·인증 유의사항</h2><div id="catguide"></div></div>
+      <div class="panel"><h2>표준 수출 절차 (ExportOS가 자동 생성하는 할 일)</h2><div id="procguide"></div></div>
+    </section>
+    <!-- DATA MANAGEMENT -->
+    <section id="v-data" class="hide">
+      <div class="phead"><div><h1>데이터 관리</h1><div class="d">K-SURE 개방데이터(data.go.kr) 스냅샷을 탑재합니다. 값은 임의로 생성되지 않으며, 탑재한 파일 그대로 표시됩니다.</div></div></div>
+      <div class="grid2">
+        <div class="panel"><h2>📦 탑재 상태</h2><div id="ksstatus"></div></div>
+        <div class="panel"><h2>⬆ 데이터 탑재 (CSV)</h2>
+          <div class="toolbar" style="margin-bottom:10px">
+            <select id="ks_type"><option value="countryRatings">국가신용등급</option><option value="oecdGrades">OECD 등급 변화</option><option value="riskIndex">RISK INDEX (국가×업종)</option></select>
+            <button class="btn line sm" onclick="document.getElementById('ksfile').click()">CSV 선택</button>
+            <input type="file" id="ksfile" accept=".csv,text/csv" class="hide" onchange="ksFile(this)">
+          </div>
+          <div id="ksmap" class="mut" style="font-size:13px">data.go.kr에서 내려받은 CSV를 선택하면 컬럼 매핑 후 저장합니다. 형식이 맞지 않으면 저장되지 않습니다(부분 저장 없음).</div>
+        </div>
+      </div>
+      <div class="panel"><h2>🧪 자체 검증 (회귀 테스트 정답표)</h2><div id="qaout"></div></div>
+    </section>
+  </main>
+</div>
+<div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
+<div class="gmask" id="gate"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   ExportOS MVP — 단일 파일 · 의존성 0 · localStorage
+   구조: 상수/규칙 → 태스크 엔진 → 렌더(뷰별) → 상세 시트 → 유틸 → 시드
+===================================================================== */
+const KEY='exportos_web_v5';
+/* 저장소 셔틀 — 샌드박스(아티팩트 등)에서 localStorage가 차단되면 메모리로 대체 */
+let _mem={},_persist=true;
+function sGet(k){try{return localStorage.getItem(k);}catch(e){_persist=false;return _mem[k]||null;}}
+function sSet(k,v){try{localStorage.setItem(k,v);}catch(e){_persist=false;_mem[k]=v;}}
+function sDel(k){try{localStorage.removeItem(k);}catch(e){delete _mem[k];}}
+const STAGES=['리드·상담','계약','결제·생산','선적·통관','회수','완료'];
+const PAY={OA:'사후송금(O/A)',TT_A:'사후 T/T',DA:'인수인도(D/A)',DP:'지급인도(D/P)',LC:'신용장(L/C)',TT_P:'선수금 T/T'};
+const PAY_RISK={OA:'담보 없음 · 회수 위험 최고',TT_A:'선적 후 송금 · 회수 위험 높음',DA:'인수 후 지급 · 위험 있음',DP:'서류=지급 · 위험 낮음',LC:'은행 지급확약 · 낮음(서류 하자 유의)',TT_P:'선지급 · 위험 최저'};
+const LINKS=[['K-SURE 단기수출보험','미회수 위험 부보','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
+const CATS=['수산식품','농식품','화장품','기계·부품','일반'];
+const CATREC={'수산식품':'<b>[통관]</b> 수산식품 — 수입국 검역·위생증명, 현지어 라벨, 유통기한·냉장/냉동 조건 사전 확인','농식품':'<b>[통관]</b> 농식품 — 잔류농약·검역 기준 및 라벨 요건 사전 확인','화장품':'<b>[통관]</b> 화장품 — 수입국 성분규제·인증(CPNP·FDA 등)·라벨 규정 사전 확인','기계·부품':'<b>[통관]</b> 기계·부품 — 안전인증(CE·UL 등)·전략물자 해당 여부·원산지(FTA) 검토','일반':''};
+
+/* =====================================================================
+   품목×수입국 지식베이스 (KB_RULES)
+   매칭축: cats(카테고리) / hs(HS부호 접두) / countries(수입국, 'EU'는 회원국 확장)
+   — 조건이 모두 맞으면 note(유의사항 표시) + task(해당 단계 진입 시 할 일 자동 생성)
+   확장 방법: 이 배열에 규칙 객체만 추가하면 진단·할 일·자료 뷰에 자동 반영
+===================================================================== */
+const EU_COUNTRIES=['독일','프랑스','네덜란드','이탈리아','스페인','폴란드','벨기에','오스트리아','아일랜드','스웨덴','덴마크','핀란드','체코','헝가리','포르투갈','그리스','루마니아','EU','유럽'];
+const KB_RULES=[
+ /* --- 식품 공통 (수산·농) × 국가 --- */
+ {cats:['수산식품','농식품'],countries:['미국'],note:'미국 식품 — FDA 식품시설등록 + 선적 전 Prior Notice(사전신고) 필수, FSVP(해외공급자검증) 대응 자료 준비',task:{st:2,tr:'물류·통관',t:'미국 식품 — FDA 시설등록 확인·Prior Notice 준비',req:1,off:7}},
+ {cats:['수산식품','농식품'],countries:['중국'],note:'중국 식품 — GACC 해외제조업체 등록 필수(등록번호 라벨 표기)',task:{st:2,tr:'물류·통관',t:'중국 식품 — GACC 해외제조업체 등록번호 확인',req:1,off:7}},
+ {cats:['수산식품','농식품'],countries:['EU'],note:'EU 식품 — EU 승인 작업장 + 위생증명서(Health Certificate), 현지어 라벨 규정 준수',task:{st:2,tr:'서류',t:'EU 식품 — 승인 작업장·위생증명서 요건 확인',req:1,off:7}},
+ {cats:['수산식품','농식품'],countries:['일본'],note:'일본 식품 — 후생노동성 수입식품 신고, 잔류농약 포지티브리스트 기준 확인',task:{st:2,tr:'물류·통관',t:'일본 식품 — 수입식품 신고·포지티브리스트 기준 확인',req:0,off:7}},
+ {cats:['수산식품','농식품'],countries:['UAE','사우디','쿠웨이트','카타르','중동'],note:'중동 식품 — 할랄 인증 요구 여부 확인, 아랍어 라벨 필요',task:{st:1,tr:'위험조치',t:'중동 식품 — 할랄 인증 필요 여부·아랍어 라벨 확인',req:0,off:7}},
+ {cats:['수산식품','농식품'],countries:['베트남'],note:'베트남 식품 — 식품안전 자가공표(제품 등록)·검역 요건 확인'},
+ {cats:['수산식품'],note:'수산식품 — 수출용 위생증명서(국립수산물품질관리원) 대상 여부 확인',task:{st:2,tr:'서류',t:'수산물 위생증명서 발급 신청(국립수산물품질관리원)',req:0,off:10}},
+ /* --- 김 (HS 세부 규칙 예시) --- */
+ {hs:'1212.21',note:'마른김(1212.21) — 수출검사·등급(수분·이물) 규격 확인, 위생증명서 발급 대상',task:{st:2,tr:'서류',t:'마른김 — 수출검사·등급확인 신청',req:1,off:7}},
+ {hs:'1212.21',countries:['일본'],note:'김 對일본 — 수입할당(IQ) 품목: 바이어의 김 수입쿼터 보유 여부가 거래 성립의 전제',task:{st:0,tr:'영업',t:'일본 바이어 — 김 수입쿼터(IQ) 보유 여부 확인',req:1,off:5}},
+ {hs:'2008.99',note:'조미김 등 가공식품 — 성분표·영양성분 표시, 첨가물(조미료) 수입국 허용 여부 확인'},
+ /* --- 화장품 × 국가 --- */
+ {cats:['화장품'],countries:['미국'],note:'미국 화장품 — MoCRA 시설등록·제품리스팅 의무, 성분 라벨(INCI) 확인',task:{st:2,tr:'물류·통관',t:'미국 화장품 — MoCRA 시설등록·제품리스팅 확인',req:1,off:7}},
+ {cats:['화장품'],countries:['EU'],note:'EU 화장품 — CPNP 등록 + 역내 책임자(RP) 지정 필수, PIF(제품정보파일) 구비',task:{st:1,tr:'위험조치',t:'EU 화장품 — CPNP 등록·책임자(RP) 지정 확인',req:1,off:10}},
+ {cats:['화장품'],countries:['중국'],note:'중국 화장품 — NMPA 등록/허가(일반/특수) 필수, 소요기간 수개월 — 계약 일정에 반영',task:{st:0,tr:'위험조치',t:'중국 화장품 — NMPA 등록/허가 상태 확인',req:1,off:5}},
+ {cats:['화장품'],countries:['일본'],note:'일본 화장품 — 의약부외품 해당 여부·성분 표시 기준 확인'},
+ /* --- 기계·부품 × 국가 --- */
+ {cats:['기계·부품'],countries:['EU'],note:'EU 기계·부품 — CE 마킹 대상 여부·적합성선언(DoC) 확인',task:{st:1,tr:'위험조치',t:'EU 향 — CE 마킹·적합성선언(DoC) 확인',req:1,off:10}},
+ {cats:['기계·부품'],countries:['미국'],note:'미국 기계·부품 — UL·FCC 등 인증 요구 여부, 232/301 추가관세 해당 여부 확인'},
+ {cats:['기계·부품'],note:'기계·부품 — 전략물자 해당 여부 자가판정(전략물자관리원) 권장',task:{st:1,tr:'서류',t:'전략물자 자가판정(전략물자관리원)',req:0,off:10}},
+ /* --- 공통 (FTA·원산지) --- */
+ {countries:['미국'],note:'미국 — 원산지(Made in Korea) 표기, 한·미 FTA 원산지증명(자율발급) 활용 검토'},
+ {countries:['EU'],note:'EU — 한·EU FTA: 6,000유로 초과 시 인증수출자만 원산지신고 가능 — 요건 확인',task:{st:3,tr:'서류',t:'한·EU FTA — 인증수출자·원산지신고 문안 확인',req:0,off:5}},
+ {countries:['베트남','중국','일본'],note:'RCEP·양자 FTA 중복 적용국 — 협정별 관세율 비교 후 유리한 협정으로 C/O 발급'},
+];
+function ctryMatch(dc,c){if(c==='EU')return EU_COUNTRIES.some(e=>dc.includes(e));return dc.includes(c);}
+function hsOf(s){const m=String(s).match(/\d{4}(\.\d{2,4})?/);return m?m[0].replace(/\./g,''):'';}
+function kbRules(d){
+  const dhs=hsOf(d.item||'');
+  return KB_RULES.filter(r=>
+    (!r.cats||r.cats.includes(d.cat))&&
+    (!r.hs||(dhs&&dhs.startsWith(r.hs.replace(/\./g,''))))&&
+    (!r.countries||r.countries.some(c=>ctryMatch(d.country||'',c))));
+}
+
+/* 업무 트랙: 동시에 진행되는 일을 엉키지 않게 구분하는 축 */
+const TRACKS=['영업','계약','결제','물류·통관','서류','위험조치','기타'];
+const TRACK_C={'영업':'#6b5bd2','계약':'#2b4a9b','결제':'#c9871a','물류·통관':'#0e7f8a','서류':'#5a6b85','위험조치':'#d9482f','기타':'#667788'};
+
+/* 단계별 표준 절차 템플릿 — 단계 진입 시 자동으로 할 일 생성.
+   off: 단계 진입일 기준 마감 D+일 / dueOff: 결제 만기일 기준(회수 단계) */
+const STAGE_TASKS=[
+ [ // 0 리드·상담
+  {t:'바이어 실재성 확인 (사업자등록·웹사이트·레퍼런스)',tr:'영업',req:1,off:3},
+  {t:'바이어 신용조사 (K-SURE 국외기업 신용조사 등) 후 신용확인 상태 입력',tr:'영업',req:1,off:7},
+  {t:'견적·Proforma Invoice(P/I) 송부',tr:'서류',req:0,off:5},
+  {t:'거래조건 협의 기록 (수량·단가·납기·결제조건)',tr:'영업',req:0,off:7},
+ ],
+ [ // 1 계약
+  {t:'결제방식·인코텀즈 최종 합의',tr:'계약',req:1,off:5},
+  {t:'방어 조항 반영 (검사·클레임 기한, 소유권 유보, 지연이자, KCAB 중재)',tr:'계약',req:1,off:5},
+  {t:'계약서 서명 교환 (고액·신규 바이어는 변호사 검토 권장)',tr:'계약',req:1,off:10},
+  {t:'K-SURE 단기수출보험 부보 검토·신청',tr:'위험조치',req:0,off:7},
+ ],
+ [ // 2 결제·생산
+  {t:'선수금 조건 시 — 입금 확인 후 생산 착수',tr:'결제',req:0,off:5},
+  {t:'L/C 조건 시 — 신용장 수취, 조건·서류요건 검토 (UCP 600)',tr:'결제',req:0,off:5},
+  {t:'생산·포장 일정 확정 (수입국 라벨·표기 요건 반영)',tr:'물류·통관',req:1,off:10},
+  {t:'선복 예약(부킹)·선적 일정 확정',tr:'물류·통관',req:1,off:12},
+  {t:'상업송장(C/I)·포장명세서(P/L) 작성',tr:'서류',req:1,off:12},
+ ],
+ [ // 3 선적·통관
+  {t:'수출신고·적재 확인 (관세사 연결)',tr:'물류·통관',req:1,off:3},
+  {t:'B/L 수취, 원산지증명서(C/O) 발급 (FTA 특혜 확인)',tr:'서류',req:1,off:5},
+  {t:'결제방식별 선적서류 처리 (L/C 매입 · D/A·D/P 추심 의뢰 · O/A 송부)',tr:'서류',req:1,off:5},
+  {t:'수입국 검역·인증 요건 최종 확인',tr:'물류·통관',req:0,off:3},
+  {t:'선적 통지(Shipping Advice) 발송',tr:'영업',req:0,off:2},
+ ],
+ [ // 4 회수
+  {t:'만기 7일 전 — 바이어에 결제 예정 사전 안내',tr:'결제',req:1,dueOff:-7},
+  {t:'대금 입금 확인 (은행 입금 대사)',tr:'결제',req:1,dueOff:0},
+  {t:'입금 완료 — 거래 완료 처리·외화 매입 확인',tr:'결제',req:0,dueOff:1},
+ ],
+ [ // 5 완료
+  {t:'거래 리뷰 — 바이어 신용확인 상태·거래 이력 갱신',tr:'기타',req:0,off:7},
+ ],
+];
+
+/* =====================================================================
+   리스크 엔진 (INSTRUCTION_리스크엔진.md)
+   절대 규칙: 실존 외부 사실(국가등급·RI·요율) 하드코딩 금지 — 값은 비우고
+   isSample 표시 샘플만 허용 / 결정론 계산만 / "신용평가" 표현 금지 /
+   출처·기준일 병기 / 결측은 '미확인' / 면책 고정 / 자동 발송·실행 금지
+===================================================================== */
+const DISCLAIMER='본 지표는 입력 정보와 공개 데이터에 기반한 참고용입니다. 신용조사·보험·법률 판단은 K-SURE·은행·변호사가 수행합니다.';
+/* KOTRA 무역사기 유형 기반 질문 체크리스트 (단정 금지 — 신호 개수만 표시) */
+const FRAUD_CHECKS=[
+ '첫 거래인데 대량 주문을 제안했다',
+ '가격 협상 없이 제시 가격을 그대로 수락했다',
+ '결제 계좌 변경(수취인·은행)을 요청받았다',
+ '서류(원본 B/L 등) 발송을 급하게 재촉한다',
+ '회사 정보가 모호하거나 무료 웹메일 주소를 쓴다',
+ '연락 채널이 자주 바뀌거나 담당자가 불분명하다',
+];
+/* K-SURE 개방데이터 스냅샷 — 출고 시 값 비움. 실데이터는 data.go.kr에서 받아 [데이터 관리]로 탑재 */
+const KSURE_KEY='exportos_ksure_v1';
+let KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null},countryRatings:[],oecdGrades:[],riskIndex:[]};
+function ksureLoad(){try{const s=JSON.parse(sGet(KSURE_KEY));if(s&&s.meta)KSURE_DATA=s;}catch(e){}}
+function ksureSave(){sSet(KSURE_KEY,JSON.stringify(KSURE_DATA));}
+function ksureStale(){const dv=KSURE_DATA.meta.dataVersion;if(!dv||!/^\d{4}-\d{2}/.test(dv))return false;return (Date.now()-new Date(dv))/86400000>=90;}
+function ksureLookup(country,data=KSURE_DATA){
+  if(!data.meta.dataVersion||!country)return null; /* 미탑재 또는 국가 미입력 */
+  const f=a=>a.filter(x=>x.country&&(String(country).includes(x.country)||String(x.country).includes(country)));
+  return{cr:f(data.countryRatings),oe:f(data.oecdGrades),ri:f(data.riskIndex)};
+}
+function ksureSampleLoad(){
+  KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:'샘플(실데이터 교체 필요)',loadedAt:now()},
+   countryRatings:[{country:'미국',grade:'(샘플)A',evaluatedAt:'(샘플)',isSample:true},{country:'베트남',grade:'(샘플)B',evaluatedAt:'(샘플)',isSample:true},{country:'UAE',grade:'(샘플)B',evaluatedAt:'(샘플)',isSample:true}],
+   oecdGrades:[{country:'베트남',prevGrade:'(샘플)4',currGrade:'(샘플)3',isSample:true},{country:'UAE',prevGrade:'(샘플)2',currGrade:'(샘플)2',isSample:true}],
+   riskIndex:[{country:'미국',industry:'수산식품',ri:'(샘플)RI2',isSample:true},{country:'베트남',industry:'기계·부품',ri:'(샘플)RI3',isSample:true}]};
+  ksureSave();
+}
+function ksureClear(){KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null},countryRatings:[],oecdGrades:[],riskIndex:[]};ksureSave();}
+const SAMPLE_BADGE='<span class="dd over">⚠ 샘플 데이터 — 공공데이터포털에서 실데이터 교체 필요</span>';
+function ksureInfoHTML(country,cat){
+  if(!country)return'';
+  if(!KSURE_DATA.meta.dataVersion)return`<div class="ksbox mut">공공데이터 미탑재 — 사이드바 [데이터 관리]에서 K-SURE 개방데이터(국가신용등급·OECD 등급·RISK INDEX)를 탑재하면 자동 표시됩니다.</div>`;
+  const r=ksureLookup(country);const tag=`<div class="mut" style="font-size:11px;margin-top:6px">출처: K-SURE 개방데이터, ${esc(KSURE_DATA.meta.dataVersion)} 기준${ksureStale()?' <span class="dd soon">⚠ 데이터 갱신 권장(90일 경과)</span>':''}</div>`;
+  const sb=x=>x.isSample?' '+SAMPLE_BADGE:'';
+  const cr=r.cr.length?r.cr.map(x=>`국가신용등급 <b>${esc(x.grade)}</b> (평가 ${esc(x.evaluatedAt||'-')})${sb(x)}`).join('<br>'):'국가신용등급: 해당 데이터 없음(미확인)';
+  const oe=r.oe.length?r.oe.map(x=>{const up=String(x.currGrade)<String(x.prevGrade),dn=String(x.currGrade)>String(x.prevGrade);return`OECD 등급 ${esc(x.prevGrade)} → <b>${esc(x.currGrade)}</b> ${up?'<span style="color:var(--green)">▲ 개선</span>':dn?'<span style="color:var(--red)">▼ 악화</span>':'변동 없음'}${sb(x)}`;}).join('<br>'):'OECD 등급: 해당 데이터 없음(미확인)';
+  const riAll=r.ri;const riHit=cat?riAll.filter(x=>String(x.industry).includes(cat)||cat.includes(String(x.industry))):[];
+  const riShow=(riHit.length?riHit:riAll).slice(0,4);
+  const ri=riShow.length?riShow.map(x=>`RISK INDEX [${esc(x.industry)}] <b>${esc(x.ri)}</b>${sb(x)}`).join('<br>'):'RISK INDEX(국가×업종): 해당 데이터 없음(미확인)';
+  return`<div class="ksbox">${cr}<br>${oe}<br>${ri}${tag}<div class="mut" style="font-size:11px;margin-top:4px">※ 개별 바이어 신용정보는 개방 데이터에 없습니다 — K-SURE 국외기업 신용조사(신청 기반)로 확인하세요.</div></div>`;
+}
+/* 내부 거래이력 (재거래 바이어 판별) — 신규 바이어의 신용을 추측하는 표현 금지 */
+function buyerHistory(d){
+  const key=String(d.buyer||'').trim().toLowerCase();if(!key)return null;
+  const others=deals.filter(x=>x.id!==d.id&&String(x.buyer).trim().toLowerCase()===key);
+  if(!others.length)return null;
+  const late=others.filter(x=>(x.tasks||[]).some(t=>t.title.includes('대금 미회수'))||(x.log||[]).some(l=>l.msg.includes('회수 지연'))).length;
+  return{n:others.length,done:others.filter(x=>x.stage===5).length,late};
+}
+/* 회수 노출액 = 거래금액 − 선수금 (순수 산수). 부보율은 사용자가 직접 입력한 경우에만 반영 */
+function exposure(amt,advPct,coverPct){
+  let e=amt*(1-(Number(advPct)||0)/100);
+  if(coverPct!==''&&coverPct!==null&&coverPct!==undefined&&!isNaN(Number(coverPct)))e=e*(1-Number(coverPct)/100);
+  return Math.round(e*100)/100;
+}
+/* 회수 시퀀스 — 만기 기준 현재 단계 (자동 발송 없음, 문안 생성만) */
+const DUN_STAGES=[{k:'D-7',lb:'D-7 사전 리마인드'},{k:'D0',lb:'만기일 확인'},{k:'D+3',lb:'D+3 정중 독촉'},{k:'D+14',lb:'D+14 강한 독촉·후속 안내'}];
+function currentDun(n){if(n===null)return null;if(n>7)return null;if(n>0)return'D-7';if(n===0)return'D0';if(n>=-13)return'D+3';return'D+14';}
+function dunText(stage,d){
+  const amt='USD '+(d.amt||0).toLocaleString(),due=d.due||'(만기일)';
+  const map={
+   'D-7':{kr:`제목: [결제 예정 안내] ${due} 만기 인보이스 관련\n\n${d.buyer} 담당자님께,\n\n안녕하세요. 당사 인보이스(금액 ${amt})의 결제 만기일이 ${due}로 예정되어 있어 미리 안내드립니다.\n결제 준비에 참고 부탁드리며, 일정에 문의가 있으시면 회신 주시기 바랍니다.\n\n감사합니다.`,
+        en:`Subject: [Payment Reminder] Invoice due on ${due}\n\nDear ${d.buyer},\n\nThis is a friendly reminder that our invoice (${amt}) is due for payment on ${due}.\nPlease kindly arrange the payment accordingly. Should you have any questions, feel free to contact us.\n\nBest regards,`},
+   'D0':{kr:`제목: [결제 만기일] 금일 만기 인보이스 확인 요청\n\n${d.buyer} 담당자님께,\n\n당사 인보이스(금액 ${amt})의 결제 만기일이 금일(${due})입니다.\n송금 진행 여부를 확인 부탁드리며, 송금증(remittance advice)을 공유해 주시면 감사하겠습니다.\n\n감사합니다.`,
+        en:`Subject: [Due Today] Payment confirmation request\n\nDear ${d.buyer},\n\nOur invoice (${amt}) falls due today, ${due}.\nWe would appreciate your confirmation of the remittance, along with a copy of the remittance advice.\n\nBest regards,`},
+   'D+3':{kr:`제목: [결제 지연 안내] 만기 경과 인보이스 확인 요청\n\n${d.buyer} 담당자님께,\n\n${due} 만기인 당사 인보이스(금액 ${amt})의 입금이 아직 확인되지 않았습니다.\n행정 처리상 착오일 수 있으니, 송금 상태와 예상 입금일을 회신해 주시기 바랍니다.\n이미 송금하셨다면 본 메일은 양해 부탁드립니다.\n\n감사합니다.`,
+        en:`Subject: [Overdue Notice] Invoice past due — status request\n\nDear ${d.buyer},\n\nWe have not yet received payment for our invoice (${amt}) which was due on ${due}.\nThis may be an administrative oversight; please advise the remittance status and the expected value date.\nIf payment has already been made, kindly disregard this notice.\n\nBest regards,`},
+   'D+14':{kr:`제목: [중요] 만기 14일 경과 미결제 인보이스 — 후속 절차 안내\n\n${d.buyer} 담당자님께,\n\n${due} 만기인 당사 인보이스(금액 ${amt})가 14일 이상 미결제 상태입니다.\n[회신 기한] 내 구체적인 결제 일정(일자·금액)을 서면으로 회신해 주시기 바랍니다.\n기한 내 회신이 없을 경우, 당사는 관련 계약 및 내부 절차에 따라 후속 조치(수출보험 보상 청구 절차 개시 또는 법률 검토 의뢰)를 진행할 수 있음을 안내드립니다.\n원만한 해결을 희망합니다.\n\n감사합니다.`,
+        en:`Subject: [Important] Invoice 14+ days overdue — next steps\n\nDear ${d.buyer},\n\nOur invoice (${amt}) due on ${due} remains unpaid for more than 14 days.\nPlease provide a written payment schedule (date and amount) by [reply deadline].\nIf we do not receive your response within the deadline, we may proceed with further steps in accordance with the contract and our internal procedures (initiating an export insurance claim process, or referring the matter for legal review).\nWe hope to resolve this amicably.\n\nBest regards,`}};
+  return map[stage];
+}
+/* 회귀 테스트 (지시서 4-1 정답표) — 부팅 시 실행 */
+function selfTest(){
+  const T=[];const ok=(name,cond,got)=>T.push({name,pass:!!cond,got});
+  let a=assess({pay:'OA',credit:'NA',amt:80000,insp:false,inco:'',cat:'일반'});ok('T1 O/A·미확인·$80k·조항무·인코무 → 84 고위험',a.score===84&&a.level==='HIGH',a.score+' '+a.level);
+  a=assess({pay:'LC',credit:'A',amt:60000,insp:true,inco:'FOB',cat:'일반'});ok('T2 L/C·A·$60k·조항유·FOB → 13 양호',a.score===13&&a.level==='LOW',a.score+' '+a.level);
+  a=assess({pay:'TT_A',credit:'C',amt:35000,insp:false,inco:'CIF',cat:'일반'});ok('T3 사후T/T·C·$35k·조항무·CIF → 70 고위험',a.score===70&&a.level==='HIGH',a.score+' '+a.level);
+  a=assess({pay:'TT_P',credit:'B',amt:22000,insp:true,inco:'DAP',cat:'일반'});ok('T4 선수금·B·$22k·조항유·DAP → 8 양호',a.score===8&&a.level==='LOW',a.score+' '+a.level);
+  ok('T5 노출액 $50k·선수금30% → $35,000',exposure(50000,30,'')===35000,exposure(50000,30,''));
+  ok('T6 부보율 90% 입력 시 → $3,500',exposure(50000,30,90)===3500,exposure(50000,30,90));
+  ok('T7 신규 바이어 → 내부 이력 없음(null)',buyerHistory({id:-1,buyer:'___테스트없는바이어___'})===null,String(buyerHistory({id:-1,buyer:'___테스트없는바이어___'})));
+  const empty={meta:{dataVersion:null},countryRatings:[],oecdGrades:[],riskIndex:[]};
+  ok('T8 K-SURE 미탑재 시 조회 null(미탑재 표시)',ksureLookup('미국',empty)===null,String(ksureLookup('미국',empty)));
+  ok('T9 만기 D+3 경과 → 정중 독촉(D+3) 문안 단계',currentDun(-3)==='D+3'&&!!dunText('D+3',{buyer:'X',amt:1,due:'2026-01-01'}),currentDun(-3));
+  window._qa=T;
+  const fail=T.filter(x=>!x.pass);
+  console[fail.length?'error':'log']('[ExportOS QA] '+(T.length-fail.length)+'/'+T.length+' 통과',T);
+  return T;
+}
+
+let deals=[],seq=1,dragId=null,editId=null,curTab='개요',accOpen=null;
+
+function load(){try{const s=JSON.parse(sGet(KEY));if(s){deals=s.deals||[];seq=s.seq||1;}}catch(e){}}
+function save(){sSet(KEY,JSON.stringify({deals,seq}));}
+const now=()=>new Date().toLocaleString('ko-KR',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+const iso=(d=new Date())=>d.toISOString().slice(0,10);
+function addDays(base,n){const x=new Date(base);x.setDate(x.getDate()+n);return iso(x);}
+function logIt(d,m){(d.log=d.log||[]).unshift({t:now(),msg:m});}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');clearTimeout(t._);t._=setTimeout(()=>t.classList.remove('on'),1900);}
+function dday(due){if(!due)return null;return Math.round((new Date(due).setHours(0,0,0,0)-new Date().setHours(0,0,0,0))/86400000);}
+function ddBadge(d){if(!d.due||d.stage===5)return'';const n=dday(d.due);if(n===null)return'';return n<0?`<span class="dd over">지연 D+${-n}</span>`:n<=7?`<span class="dd soon">임박 D-${n}</span>`:`<span class="dd ok">D-${n}</span>`;}
+function tdd(t){if(!t.due)return'';const n=dday(t.due);return n<0?`<span class="dd over">D+${-n}</span>`:n===0?`<span class="dd soon">오늘</span>`:n<=7?`<span class="dd soon">D-${n}</span>`:`<span class="dd ok">D-${n}</span>`;}
+
+/* ---------- 위험 진단 규칙 엔진 ---------- */
+function assess(d){
+  let s=0;const recs=[];const parts=[];
+  const p1={OA:40,TT_A:35,DA:25,DP:15,LC:5,TT_P:0}[d.pay]||0;s+=p1;parts.push({k:'결제방식 — '+(PAY[d.pay]||d.pay),v:p1});
+  const noG=['OA','TT_A','DA'].includes(d.pay),cR=['C','D','NA'].includes(d.credit);
+  const p2=d.credit==='D'?35:d.credit==='C'?25:d.credit==='NA'?20:d.credit==='B'?8:0;s+=p2;
+  parts.push({k:'신용확인 상태 — '+(d.credit==='NA'?'미확인(조사 전)':'K-SURE 조사 결과 '+d.credit),v:p2});
+  const p3=d.amt>=100000?15:d.amt>=50000?8:0;s+=p3;parts.push({k:'거래금액 — $'+(d.amt||0).toLocaleString(),v:p3});
+  const p4=d.insp?0:10;s+=p4;parts.push({k:'검사조항·클레임 기한 — '+(d.insp?'명시':'미설정'),v:p4});
+  const p5=d.inco?0:6;s+=p5;parts.push({k:'인코텀즈 — '+(d.inco||'미선택'),v:p5});
+  s=Math.min(100,s);
+  if(noG&&cR)recs.push('<b>[결제]</b> 미회수 위험 높음 → 선수금 30~50% 확보 또는 K-SURE 단기수출보험 부보, 가능 시 신용장 전환');
+  else if(noG)recs.push('<b>[결제]</b> 무담보 거래 → K-SURE 단기수출보험 부보 검토');
+  else if(d.pay==='LC')recs.push('<b>[결제]</b> 신용장 거래 → 제시 전 UCP 600·ISBP 821 서류 하자 체크리스트 확인');
+  if(d.amt>=50000&&noG)recs.push('<b>[결제]</b> 고액 무담보 → 분할선적·분할결제로 익스포저 축소');
+  if(!d.insp)recs.push('<b>[계약]</b> 검사조항·클레임 제기기한 미설정 → 소유권 유보·검사조항·클레임 기한 명문화');
+  if(!d.inco)recs.push('<b>[계약]</b> 인코텀즈 미선택 → 위험·비용 분기점 확정');
+  if(CATREC[d.cat])recs.push(CATREC[d.cat]);
+  if(d.newmkt)recs.push('<b>[통관]</b> 신규 수입국(첫 거래) → 통관·인증 절차 사전 확인 권장');
+  return{score:s,level:s>=60?'HIGH':s>=30?'MED':'LOW',recs,parts};
+}
+const relabel=l=>l==='HIGH'?'고위험':l==='MED'?'주의':'양호';
+function clauses(d){const a=[];
+ a.push('【검사 및 클레임】 매수인은 물품 도착일로부터 14일 이내에 검사를 완료하고, 하자 발견 시 근거자료와 함께 서면 통지한다. 기한 내 통지가 없으면 물품은 인수된 것으로 본다.');
+ a.push('【소유권 유보】 매매대금이 완납될 때까지 물품의 소유권은 매도인에게 유보된다.');
+ if(['OA','TT_A','DA'].includes(d.pay))a.push('【결제·지연이자】 매도인은 선수금 수령 후 생산에 착수하며, 매수인이 지급기일을 도과할 경우 연체이자를 부담한다.');
+ a.push('【준거법·분쟁해결】 준거법은 대한민국 법으로 하고, 분쟁은 대한상사중재원(KCAB)의 중재로 최종 해결한다(중재지: 서울).');
+ return a.join('\n\n');}
+
+/* ---------- 태스크 엔진 ---------- */
+function newTask(d,o){d.tseq=(d.tseq||0)+1;return Object.assign({id:d.tseq,done:false,src:'auto'},o);}
+function genStageTasks(d,si){
+  d.genStages=d.genStages||[];if(d.genStages.includes(si))return;
+  d.genStages.push(si);d.tasks=d.tasks||[];
+  const entry=iso();
+  STAGE_TASKS[si].forEach(tp=>{
+    let due=null;
+    if(tp.dueOff!==undefined&&d.due)due=addDays(d.due,tp.dueOff);
+    else if(tp.off!==undefined)due=addDays(entry,tp.off);
+    d.tasks.push(newTask(d,{title:tp.t,track:tp.tr,stage:si,req:!!tp.req,due}));
+  });
+  /* 품목×수입국 KB 규칙의 해당 단계 할 일 추가 */
+  kbRules(d).filter(r=>r.task&&r.task.st===si).forEach(r=>{
+    if(!d.tasks.some(t=>t.title===r.task.t))
+      d.tasks.push(newTask(d,{title:r.task.t,track:r.task.tr,stage:si,req:!!r.task.req,due:addDays(entry,r.task.off||7),src:'kb'}));
+  });
+}
+/* 품목·수입국 변경 시 KB 할 일 재동기화: 완료된 것은 보존, 미완료 stale 제거, 신규 추가 */
+function syncKbTasks(d){
+  d.tasks=d.tasks||[];d.genStages=d.genStages||[];
+  const want=kbRules(d).filter(r=>r.task&&d.genStages.includes(r.task.st));
+  d.tasks=d.tasks.filter(t=>t.src!=='kb'||t.done||want.some(r=>r.task.t===t.title));
+  want.forEach(r=>{
+    if(!d.tasks.some(t=>t.title===r.task.t))
+      d.tasks.push(newTask(d,{title:r.task.t,track:r.task.tr,stage:r.task.st,req:!!r.task.req,due:addDays(iso(),r.task.off||7),src:'kb'}));
+  });
+}
+/* 위험 진단 결과를 '위험조치' 태스크로 동기화 (완료 상태 보존) */
+function syncRiskTasks(d){
+  d.tasks=d.tasks||[];
+  const plain=r=>r.replace(/<[^>]+>/g,'');
+  const old=d.tasks.filter(t=>t.src==='risk');
+  d.tasks=d.tasks.filter(t=>t.src!=='risk');
+  (d.recs||[]).forEach(r=>{
+    const title=plain(r);
+    const prev=old.find(t=>t.title===title);
+    if(prev)d.tasks.push(prev);
+    else d.tasks.push(newTask(d,{title,track:'위험조치',stage:d.stage,req:false,due:null,src:'risk'}));
+  });
+}
+/* 팔로업 자동 생성: 만기 초과·미회수 시 독촉 태스크 (중복 방지) */
+function autoFollowup(){
+  let changed=false;
+  deals.forEach(d=>{
+    if(d.due&&d.stage<5&&dday(d.due)<0){
+      d.tasks=d.tasks||[];
+      const title='⚠ 대금 미회수 — 바이어 독촉, K-SURE 부보 시 사고 통지 기한 확인';
+      if(!d.tasks.some(t=>t.title===title)){
+        d.tasks.push(newTask(d,{title,track:'위험조치',stage:4,req:true,due:iso(),src:'auto'}));
+        logIt(d,'회수 지연 감지 — 독촉 할 일 자동 생성');changed=true;
+      }
+    }
+  });
+  if(changed)save();
+}
+function toggleTask(dealId,tid){
+  const d=deals.find(x=>x.id===dealId);const t=d.tasks.find(x=>x.id===tid);
+  t.done=!t.done;t.doneAt=t.done?now():null;
+  logIt(d,`${t.done?'완료':'완료 취소'}: ${t.title.slice(0,44)}`);
+  render();if(document.getElementById('mask').classList.contains('on')&&editId===dealId)renderDetail(dealId);
+}
+function addManualTask(dealId){
+  const el=document.getElementById('mt_'+dealId);const v=el.value.trim();if(!v)return;
+  const d=deals.find(x=>x.id===dealId);
+  d.tasks.push(newTask(d,{title:v,track:'기타',stage:d.stage,req:false,due:null,src:'manual'}));
+  logIt(d,'할 일 추가: '+v.slice(0,44));el.value='';render();renderDetail(dealId);
+}
+/* 필수 절차 미완료 검사 (단계 게이트) */
+function missingReq(d,target){
+  return (d.tasks||[]).filter(t=>t.req&&!t.done&&t.stage<target&&t.src!=='risk');
+}
+function stageProgress(d){
+  const cur=(d.tasks||[]).filter(t=>t.stage===d.stage);
+  if(!cur.length)return{done:0,total:0,pct:100};
+  const done=cur.filter(t=>t.done).length;
+  return{done,total:cur.length,pct:Math.round(done/cur.length*100)};
+}
+function nextAction(d){
+  const undone=(d.tasks||[]).filter(t=>!t.done&&t.stage<=d.stage);
+  undone.sort((a,b)=>(b.req-a.req)||((a.due||'9999')<(b.due||'9999')?-1:1));
+  return undone.length?undone[0].title:'현재 단계 절차 완료 — 다음 단계로 이동하세요';
+}
+
+/* ---------- 단계 이동 (게이트 포함) ---------- */
+function requestStage(id,target){
+  const d=deals.find(x=>x.id===id);if(!d||d.stage===target)return;
+  if(target>d.stage){
+    const miss=missingReq(d,target).filter(t=>t.stage>=d.stage||!t.done);
+    const missNow=(d.tasks||[]).filter(t=>t.req&&!t.done&&t.stage<target);
+    if(missNow.length){showGate(d,target,missNow);return;}
+  }
+  doStage(d,target);
+}
+function doStage(d,target){
+  for(let i=0;i<=target;i++)genStageTasks(d,i);
+  logIt(d,`단계 이동: ${STAGES[d.stage]} → ${STAGES[target]}`);
+  d.stage=target;
+  toast(`${d.buyer} → ${STAGES[target]}`);
+  render();
+  if(document.getElementById('mask').classList.contains('on')&&editId===d.id)renderDetail(d.id);
+}
+function showGate(d,target,miss){
+  const g=document.getElementById('gate');
+  g.innerHTML=`<div class="gbox"><h3>⚠ 필수 절차가 남아 있습니다</h3>
+   <div class="mut" style="font-size:13px">"${esc(d.buyer)}" 거래를 <b>${STAGES[target]}</b> 단계로 옮기기 전, 아래 필수 절차가 완료되지 않았습니다.</div>
+   <ul>${miss.map(t=>`<li><b>[${STAGES[t.stage]}]</b> ${esc(t.title)}</li>`).join('')}</ul>
+   <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+     <button class="btn line sm" onclick="closeGate()">취소</button>
+     <button class="btn ghost sm" onclick="closeGate();openDetail(${d.id});curTab='절차·할 일';renderDetail(${d.id})">절차 확인하기</button>
+     <button class="btn sm" onclick="closeGate();forceStage(${d.id},${target})">확인했고 이동</button>
+   </div></div>`;
+  g.classList.add('on');
+}
+function closeGate(){document.getElementById('gate').classList.remove('on');}
+function forceStage(id,target){const d=deals.find(x=>x.id===id);logIt(d,'필수 절차 미완료 상태로 단계 이동(사용자 확인)');doStage(d,target);}
+document.getElementById('gate').addEventListener('click',e=>{if(e.target.id==='gate')closeGate();});
+
+/* ---------- 태스크 집계 ---------- */
+function allTasks(){
+  const out=[];
+  deals.forEach(d=>{if(d.stage===5)return;(d.tasks||[]).forEach(t=>{if(t.stage<=d.stage)out.push({d,t});});});
+  return out;
+}
+function taskStats(){
+  const ts=allTasks().filter(x=>!x.t.done);
+  const over=ts.filter(x=>x.t.due&&dday(x.t.due)<0);
+  const today=ts.filter(x=>x.t.due&&dday(x.t.due)>=0&&dday(x.t.due)<=7);
+  return{over,today,open:ts};
+}
+
+/* ---------- 렌더 ---------- */
+function render(){autoFollowup();renderToday();renderKpis();renderDue();renderStageChart();renderHigh();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBadge();save();}
+function renderBadge(){
+  const s=taskStats();const n=s.over.length+s.today.length;
+  const b=document.getElementById('taskbadge');
+  b.classList.toggle('hide',!n);b.textContent=n;
+}
+function renderToday(){
+  const s=taskStats();
+  const overDeal=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<0);
+  const risky=deals.filter(d=>d.level==='HIGH'&&d.stage<5&&(d.tasks||[]).some(t=>t.src==='risk'&&!t.done));
+  const rows=[
+   ['🔴',`기한 지난 할 일 — 즉시 처리`,s.over.length,()=>goTasks()],
+   ['📌',`7일 내 마감 할 일`,s.today.length,()=>goTasks()],
+   ['⏰',`회수 지연 거래 — 독촉·수출보험 확인`,overDeal.length,()=>overDeal.length&&openDetail(overDeal[0].id)],
+   ['⚠️',`고위험·위험조치 미이행 거래`,risky.length,()=>risky.length&&openDetail(risky[0].id)],
+  ].filter(r=>r[2]>0);
+  const total=rows.reduce((a,r)=>a+r[2],0);
+  const hr=new Date().getHours();const gr=hr<11?'좋은 아침입니다':hr<18?'안녕하세요':'수고 많으셨습니다';
+  window._heroActs=rows.map(r=>r[3]);
+  document.getElementById('today').innerHTML=`<div class="hi">👋 김 대표님, ${gr}</div>
+    <div class="hs">오늘 확인이 필요한 업무 <b style="color:var(--pri-d)">${total}건</b>${total?' — 아래에서 바로 처리하세요.':''}</div>
+    ${rows.length?`<div class="todo">${rows.map((r,i)=>`<div class="ti" onclick="_heroActs[${i}]()"><span class="ic">${r[0]}</span><span class="tx">${r[1]}</span><span class="cn">${r[2]}건</span><span class="ar">→</span></div>`).join('')}</div>`:`<div class="mut" style="margin-top:10px">지금 급히 처리할 업무가 없습니다. 👍</div>`}`;
+}
+function goTasks(){go('tasks');}
+function renderKpis(){
+  const s=taskStats();
+  const t=deals.length,h=deals.filter(d=>d.level==='HIGH'&&d.stage<5).length,
+   due=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<=7).length;
+  window._kpiActs=[()=>go('ledger'),()=>{document.getElementById('fLevel').value='HIGH';go('ledger');renderLedger();},()=>go('dash'),goTasks];
+  document.getElementById('kpis').innerHTML=[['전체 거래','▦',t,''],['고위험 (진행중)','⚠',h,'a'],['회수 임박·지연','⏰',due,'a'],['열린 할 일','☑',s.open.length,'']]
+   .map(([l,i,n,c],ix)=>`<div class="kpi ${c}" onclick="_kpiActs[${ix}]()"><div class="l">${i} ${l}</div><div class="n">${n}</div></div>`).join('');
+}
+function renderStageChart(){
+  const max=Math.max(1,...STAGES.map((_,i)=>deals.filter(d=>d.stage===i).length));
+  document.getElementById('stagechart').innerHTML=STAGES.map((s,i)=>{const c=deals.filter(d=>d.stage===i).length;
+    return `<div class="bar"><span class="lb">${s}</span><span class="tr"><span class="fl" style="width:${c/max*100}%"></span></span><span class="vv">${c}</span></div>`;}).join('');
+}
+function renderBoard(){
+  document.getElementById('board').innerHTML=STAGES.map((s,ci)=>{
+    const cards=deals.filter(d=>d.stage===ci).map(cardHTML).join('');
+    return `<div class="col" data-ci="${ci}" ondragover="dOver(event,${ci})" ondragleave="dLeave(${ci})" ondrop="dDrop(event,${ci})"><div class="colh"><span>${ci+1}. ${s}</span><span class="cnt">${deals.filter(d=>d.stage===ci).length}</span></div>${cards||'<div class="mut" style="font-size:11.5px;padding:6px 4px">—</div>'}</div>`;
+  }).join('');
+}
+function cardHTML(d){
+  const p=stageProgress(d);
+  return `<div class="card ${d.level}" draggable="true" ondragstart="dStart(${d.id})" onclick="openDetail(${d.id})">
+  <div class="b">${esc(d.buyer)}</div><div class="m">${esc(d.item)} · ${esc(d.country)} · $${(d.amt||0).toLocaleString()}</div>
+  <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span>${ddBadge(d)}
+  ${p.total?`<div class="prog ${p.pct<100?'warn':''}"><i style="width:${p.pct}%"></i></div><div class="progl"><span>현 단계 절차</span><span>${p.done}/${p.total}</span></div>`:''}
+  ${d.stage<5?`<div class="next">▶ ${esc(nextAction(d))}</div>`:''}</div>`;}
+function renderDue(){
+  const list=deals.filter(d=>d.due&&d.stage<5).map(d=>({d,n:dday(d.due)})).filter(x=>x.n<=14).sort((a,b)=>a.n-b.n);
+  document.getElementById('duelist').innerHTML=list.length?('<table><thead><tr><th>바이어</th><th>금액</th><th>결제</th><th>만기</th></tr></thead><tbody>'+
+   list.map(({d,n})=>`<tr class="r" onclick="openDetail(${d.id})"><td><b>${esc(d.buyer)}</b></td><td>$${d.amt.toLocaleString()}</td><td>${PAY[d.pay]}</td><td>${d.due} ${n<0?`<span class="dd over">지연 D+${-n}</span>`:`<span class="dd soon">D-${n}</span>`}</td></tr>`).join('')+'</tbody></table>'):'<div class="empty">임박·지연 거래가 없습니다.</div>';
+}
+function renderHigh(){const hi=deals.filter(d=>d.level==='HIGH'&&d.stage<5);document.getElementById('highlist').innerHTML=hi.length?tbl(hi):'<div class="empty">고위험 거래가 없습니다.</div>';}
+function renderLedger(){
+  const sel=document.getElementById('fStage'); if(sel&&sel.options.length<2){sel.innerHTML='<option value="">단계 전체</option>'+STAGES.map((s,i)=>`<option value="${i}">${i+1}. ${s}</option>`).join('');}
+  const cs=document.getElementById('fCat'); if(cs&&cs.options.length<2){cs.innerHTML='<option value="">품목 전체</option>'+CATS.map(c=>`<option value="${c}">${c}</option>`).join('');}
+  const q=(document.getElementById('q')?.value||'').toLowerCase(),lv=document.getElementById('fLevel')?.value||'',st=document.getElementById('fStage')?.value||'',ct=document.getElementById('fCat')?.value||'';
+  const list=deals.filter(d=>(d.buyer+d.item+d.country).toLowerCase().includes(q)&&(!lv||d.level===lv)&&(st===''||d.stage==st)&&(!ct||d.cat===ct));
+  document.getElementById('ledger').innerHTML=list.length?tbl(list):'<div class="empty">조건에 맞는 거래가 없습니다.</div>';
+}
+function tbl(list){return `<table><thead><tr><th>바이어</th><th>품목</th><th>국가</th><th>결제</th><th>금액</th><th>위험</th><th>만기</th><th>단계</th><th>절차</th></tr></thead><tbody>${list.map(d=>{const p=stageProgress(d);return `<tr class="r" onclick="openDetail(${d.id})"><td><b>${esc(d.buyer)}</b></td><td>${esc(d.item)}</td><td>${esc(d.country)}</td><td>${PAY[d.pay]}</td><td>$${(d.amt||0).toLocaleString()}</td><td><span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></td><td>${d.due?esc(d.due)+' '+ddBadge(d):'-'}</td><td>${d.stage+1}. ${STAGES[d.stage]}</td><td>${p.total?p.done+'/'+p.total:'-'}</td></tr>`;}).join('')}</tbody></table>`;}
+
+/* 내 할 일 뷰 */
+function renderTasks(){
+  const tt=document.getElementById('tTrack');
+  if(tt&&tt.options.length<2)tt.innerHTML='<option value="">트랙 전체</option>'+TRACKS.map(t=>`<option value="${t}">${t}</option>`).join('');
+  const td=document.getElementById('tDeal');
+  const cur=td.value;
+  td.innerHTML='<option value="">거래 전체</option>'+deals.filter(d=>d.stage<5).map(d=>`<option value="${d.id}" ${String(d.id)===cur?'selected':''}>${esc(d.buyer)}</option>`).join('');
+  const q=(document.getElementById('tq')?.value||'').toLowerCase(),tr=tt.value,dl=td.value,showDone=document.getElementById('tDone').checked;
+  let list=allTasks().filter(({d,t})=>
+    (t.title+d.buyer).toLowerCase().includes(q)&&(!tr||t.track===tr)&&(!dl||String(d.id)===dl));
+  const open=list.filter(x=>!x.t.done);
+  const byDue=x=>x.t.due||'9999-12-31';
+  const over=open.filter(x=>x.t.due&&dday(x.t.due)<0).sort((a,b)=>byDue(a)<byDue(b)?-1:1);
+  const soon=open.filter(x=>x.t.due&&dday(x.t.due)>=0&&dday(x.t.due)<=7).sort((a,b)=>byDue(a)<byDue(b)?-1:1);
+  const later=open.filter(x=>!x.t.due||dday(x.t.due)>7).sort((a,b)=>byDue(a)<byDue(b)?-1:1);
+  const done=showDone?list.filter(x=>x.t.done):[];
+  const grp=(icon,name,arr)=>arr.length?`<div class="tgrp"><h3>${icon} ${name} <span class="cnt">${arr.length}</span></h3>${arr.map(taskRow).join('')}</div>`:'';
+  const html=grp('🔴','기한 초과',over)+grp('📌','오늘·7일 내',soon)+grp('🗂','예정',later)+grp('✅','완료',done);
+  document.getElementById('tasklist').innerHTML=html||'<div class="empty">표시할 할 일이 없습니다. 새 거래를 등록하면 단계별 절차가 자동 생성됩니다.</div>';
+}
+function taskRow({d,t}){
+  return `<div class="trow ${t.done?'done':''}">
+    <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${d.id},${t.id})">
+    <span class="trk"><i style="background:${TRACK_C[t.track]||'#667'}"></i>${t.track}</span>
+    <span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>
+    ${tdd(t)}
+    <span class="dc" onclick="openDetail(${d.id})">${esc(d.buyer)} · ${STAGES[t.stage]}</span>
+  </div>`;
+}
+function renderRes(){
+  document.getElementById('reslinks').innerHTML=LINKS.map(l=>`<a href="${l[2]}" target="_blank" rel="noopener"><span>${l[0]}<div class="mut" style="font-weight:400;font-size:12px">${l[1]}</div></span><span>↗</span></a>`).join('');
+  document.getElementById('payguide').innerHTML=Object.keys(PAY).map(k=>`<div class="bar" style="margin-bottom:11px"><span class="lb" style="width:120px;font-weight:700">${PAY[k]}</span><span class="mut" style="font-size:12.5px">${PAY_RISK[k]}</span></div>`).join('');
+  document.getElementById('catguide').innerHTML=CATS.filter(c=>CATREC[c]).map(c=>`<div class="bar" style="margin-bottom:11px;align-items:flex-start"><span class="lb" style="width:96px;font-weight:700">${c}</span><span class="mut" style="font-size:12.5px">${CATREC[c].replace(/<[^>]+>/g,'').replace(/^\s*\[통관\]\s*/,'')}</span></div>`).join('');
+  const kc=document.getElementById('kbCat');
+  if(kc&&kc.options.length<2)kc.innerHTML='<option value="">카테고리 선택</option>'+CATS.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('procguide').innerHTML=STAGES.map((s,i)=>`<div style="margin-bottom:12px"><b style="font-size:13px">${i+1}. ${s}</b><div style="margin-top:5px">${STAGE_TASKS[i].map(t=>`<span class="pill"><i style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${TRACK_C[t.tr]};margin-right:5px"></i>${t.t}${t.req?' <b style="color:var(--red)">*</b>':''}</span>`).join(' ')}</div></div>`).join('')+'<div class="mut" style="font-size:12px">* 필수 절차 — 미완료 시 단계 이동 전에 확인을 요청합니다.</div>';
+}
+
+/* 데이터 관리 (K-SURE 스냅샷 탑재) */
+const KS_FIELDS={countryRatings:[['country','국가'],['grade','등급'],['evaluatedAt','평가일']],oecdGrades:[['country','국가'],['prevGrade','이전 등급'],['currGrade','현재 등급']],riskIndex:[['country','국가'],['industry','업종'],['ri','RISK INDEX']]};
+const KS_LABEL={countryRatings:'국가신용등급',oecdGrades:'OECD 등급 변화',riskIndex:'RISK INDEX'};
+function renderData(){
+  const m=KSURE_DATA.meta;
+  const hasSample=[...KSURE_DATA.countryRatings,...KSURE_DATA.oecdGrades,...KSURE_DATA.riskIndex].some(x=>x.isSample);
+  document.getElementById('ksstatus').innerHTML=`
+    <div style="margin-bottom:10px">${m.dataVersion?`기준일(dataVersion): <b>${esc(m.dataVersion)}</b> · 탑재 ${esc(m.loadedAt||'-')} ${ksureStale()?'<span class="dd soon">⚠ 데이터 갱신 권장(90일 경과)</span>':''}${hasSample?'<br>'+SAMPLE_BADGE:''}`:'<span class="dd over">공공데이터 미탑재</span> — 국가 관련 지표는 표시되지 않습니다.'}</div>
+    <table><thead><tr><th>데이터셋</th><th>건수</th></tr></thead><tbody>
+    ${Object.keys(KS_LABEL).map(k=>`<tr><td>${KS_LABEL[k]}</td><td>${KSURE_DATA[k].length}</td></tr>`).join('')}</tbody></table>
+    <div class="mut" style="font-size:11.5px;margin:10px 0">출처: ${esc(m.source)}</div>
+    <div style="display:flex;gap:8px"><button class="btn line sm" onclick="ksureSampleLoad();render();toast('샘플 데이터를 탑재했습니다 — 실데이터로 교체하세요')">데모용 샘플 탑재</button>
+    <button class="btn line sm" onclick="if(confirm('탑재된 K-SURE 데이터를 모두 비울까요?')){ksureClear();render();}">데이터 비우기</button>
+    <a class="btn ghost sm" href="https://www.data.go.kr" target="_blank" rel="noopener">data.go.kr ↗</a></div>`;
+  const qa=window._qa||[];
+  document.getElementById('qaout').innerHTML=qa.length?`<table><thead><tr><th>케이스</th><th>결과</th><th>실측값</th></tr></thead><tbody>${qa.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pass?'<span class="badge LOW">통과</span>':'<span class="badge HIGH">실패</span>'}</td><td>${esc(String(t.got))}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">테스트 미실행</div>';
+}
+function parseCSV(text){
+  const lines=String(text).replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return null;
+  const split=l=>l.split(',').map(x=>x.trim().replace(/^"|"$/g,''));
+  return{head:split(lines[0]),rows:lines.slice(1).map(split)};
+}
+let _csv=null;
+function ksFile(inp){
+  const f=inp.files[0];if(!f)return;
+  const type=document.getElementById('ks_type').value;
+  const r=new FileReader();
+  r.onload=()=>{
+    const p=parseCSV(r.result);
+    if(!p){document.getElementById('ksmap').innerHTML='<span class="dd over">파싱 실패 — 헤더+데이터 행이 있는 CSV인지 확인하세요. 저장되지 않았습니다.</span>';inp.value='';return;}
+    _csv={type,head:p.head,rows:p.rows};
+    const guess=lb=>{const kw={'국가':['국가','country'],'등급':['등급','grade','rating'],'평가일':['평가','기준','일자','date'],'이전 등급':['이전','전','prev'],'현재 등급':['현재','당','curr'],'업종':['업종','산업','industry'],'RISK INDEX':['ri','index','지수','risk']}[lb]||[lb];
+      const i=p.head.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));return i;};
+    document.getElementById('ksmap').innerHTML=`
+      <div class="mut" style="font-size:12px;margin-bottom:8px">${esc(f.name)} — ${p.rows.length}행 · ${KS_LABEL[type]}로 저장. 각 필드에 해당하는 CSV 컬럼을 지정하세요.</div>
+      ${KS_FIELDS[type].map(([k,lb],ix)=>`<div class="row" style="grid-template-columns:120px 1fr;align-items:center;margin-bottom:6px"><label style="margin:0">${lb}</label><select id="ksm_${k}">${p.head.map((h,i)=>`<option value="${i}" ${i===guess(lb)?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`).join('')}
+      <div class="row" style="grid-template-columns:120px 1fr;align-items:center"><label style="margin:0">자료 기준일</label><input type="date" id="ksm_ver"></div>
+      <button class="btn sm" onclick="ksCommit()">검증 후 저장</button> <span class="mut" style="font-size:11.5px">형식 불일치 시 저장하지 않습니다(부분 저장 금지).</span>`;
+    inp.value='';
+  };
+  r.readAsText(f,'utf-8');
+}
+function ksCommit(){
+  if(!_csv)return;
+  const ver=document.getElementById('ksm_ver').value;
+  if(!ver){toast('자료 기준일을 입력하세요 — 기준일 없는 외부 정보는 표시할 수 없습니다');return;}
+  const map=KS_FIELDS[_csv.type].map(([k])=>[k,Number(document.getElementById('ksm_'+k).value)]);
+  const out=[];
+  for(const row of _csv.rows){
+    const o={};let bad=false;
+    for(const[k,i]of map){const val=(row[i]||'').trim();if(!val){bad=true;break;}o[k]=val;}
+    if(bad){document.getElementById('ksmap').innerHTML='<span class="dd over">형식 불일치 — 빈 값이 있는 행이 있어 저장하지 않았습니다(부분 저장 금지). CSV를 확인하세요.</span>';_csv=null;return;}
+    out.push(o);
+  }
+  KSURE_DATA[_csv.type]=out;
+  KSURE_DATA.meta.dataVersion=ver;KSURE_DATA.meta.loadedAt=now();
+  ksureSave();_csv=null;
+  document.getElementById('ksmap').innerHTML='<span class="badge LOW">저장 완료</span> <span class="mut" style="font-size:12px">'+out.length+'건 탑재되었습니다.</span>';
+  render();toast('K-SURE 데이터가 탑재되었습니다');
+}
+
+/* KB 규칙 찾기 (자료·연결) */
+function renderKbFinder(){
+  const cat=document.getElementById('kbCat').value,hs=document.getElementById('kbHs').value.trim(),ctry=document.getElementById('kbCtry').value.trim();
+  const out=document.getElementById('kbout');
+  if(!cat&&!hs&&!ctry){out.innerHTML='카테고리·HS부호·수입국을 입력하면 해당 조합에 적용되는 통관·인증 규칙과 자동 생성될 할 일을 미리 볼 수 있습니다.';return;}
+  const rules=kbRules({cat:cat||'—',item:hs,country:ctry});
+  out.innerHTML=rules.length?rules.map(r=>`<div class="rec"><span>📋</span><div>${esc(r.note)}${r.task?`<div style="margin-top:4px"><span class="trk"><i style="background:${TRACK_C[r.task.tr]}"></i>${r.task.tr}</span> <span class="pill">${STAGES[r.task.st]} 단계에 할 일 자동 생성${r.task.req?' · <b style="color:var(--red)">필수</b>':''}</span></div>`:''}</div></div>`).join('')
+   :'<div class="empty">해당 조합에 등록된 세부 규칙이 없습니다. 일반 절차(표준 수출 절차)가 적용됩니다.</div>';
+}
+
+/* ---------- 드래그 ---------- */
+function dStart(id){dragId=id;}
+function dOver(e,ci){e.preventDefault();document.querySelector(`.col[data-ci="${ci}"]`).classList.add('drag');}
+function dLeave(ci){document.querySelector(`.col[data-ci="${ci}"]`).classList.remove('drag');}
+function dDrop(e,ci){e.preventDefault();document.querySelector(`.col[data-ci="${ci}"]`).classList.remove('drag');requestStage(dragId,ci);}
+
+/* ---------- 신규/수정 ---------- */
+function openNew(){editId=null;formSheet({});}
+function renderKsForm(){const el=document.getElementById('m_ksinfo');if(el)el.innerHTML=ksureInfoHTML(v('m_country'),v('m_cat'));}
+function formSheet(d){
+  document.getElementById('sheet').innerHTML=`
+   <div class="sh"><div><h2 style="margin:0;font-size:18px">${d.id?'거래 수정':'신규 거래 등록'}</h2><div class="mut" style="font-size:12.5px;margin-top:3px">입력 시 결제·계약 위험을 자동 진단하고, 단계별 실무 절차를 자동 생성합니다.</div></div><button class="x" onclick="closeSheet()">✕</button></div>
+   <div class="sb">
+    <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||'')}" placeholder="예: 냉동 수산물 (0303.89)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||'일반')}</select></div></div>
+    <div class="row"><div><label>바이어명</label><input id="m_buyer" value="${esc(d.buyer||'')}"></div><div><label>수입국</label><input id="m_country" value="${esc(d.country||'')}" placeholder="미국" oninput="renderKsForm()"></div></div>
+    <div id="m_ksinfo">${ksureInfoHTML(d.country||'',d.cat||'')}</div>
+    <div class="row"><div><label>거래금액 (USD)</label><input id="m_amt" type="number" value="${d.amt||''}"></div><div><label>신용확인 상태 (K-SURE 국외기업 신용조사)</label><select id="m_credit">${opt(['A','B','C','D','NA'],['A (조사 완료·양호)','B (조사 완료·보통)','C (조사 완료·주의)','D (조사 완료·위험)','미확인 (조사 전)'],d.credit||'NA')}</select></div></div>
+    <div class="row"><div><label>결제방식</label><select id="m_pay">${opt(Object.keys(PAY),Object.values(PAY),d.pay||'OA')}</select></div><div><label>인코텀즈 (Incoterms 2020)</label><select id="m_inco">${opt(['','EXW','FOB','CFR','CIF','DAP','DDP'],['— 미선택 —','EXW','FOB','CFR','CIF','DAP','DDP'],d.inco||'')}</select></div></div>
+    <div class="row"><div><label>결제 만기일 (회수 예정)</label><input id="m_due" type="date" value="${d.due||''}"></div><div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end"><label class="chk"><input type="checkbox" id="m_insp" ${d.insp?'checked':''}> 검사조항·클레임 기한 명시</label><label class="chk"><input type="checkbox" id="m_newmkt" ${d.newmkt?'checked':''}> 신규 수입국 (첫 거래)</label></div></div>
+    <div style="display:flex;gap:8px"><button class="btn" onclick="saveDeal()">${d.id?'저장 및 재진단':'진단 및 등록'}</button><button class="btn line" onclick="closeSheet()">취소</button>${d.id?`<button class="btn red" style="margin-left:auto" onclick="delDeal(${d.id})">삭제</button>`:''}</div>
+   </div>`;
+  openSheet();
+}
+function saveDeal(){
+  const nd={id:editId||seq++,item:v('m_item')||'(품목)',cat:v('m_cat'),buyer:v('m_buyer')||'(바이어)',country:v('m_country')||'-',amt:Number(v('m_amt'))||0,credit:v('m_credit'),pay:v('m_pay'),inco:v('m_inco'),due:v('m_due'),insp:document.getElementById('m_insp').checked,newmkt:document.getElementById('m_newmkt').checked};
+  const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
+  if(editId){
+    const i=deals.findIndex(x=>x.id===editId);const old=deals[i];
+    nd.stage=old.stage;nd.tasks=old.tasks||[];nd.tseq=old.tseq||0;nd.genStages=old.genStages||[];nd.notes=old.notes;nd.log=old.log||[];
+    /* 만기일 변경 시 회수 단계 태스크 마감 갱신 */
+    if(nd.due&&nd.due!==old.due)nd.tasks.forEach(t=>{const tp=STAGE_TASKS[4].find(p=>p.t===t.title);if(t.stage===4&&tp&&tp.dueOff!==undefined)t.due=addDays(nd.due,tp.dueOff);});
+    syncRiskTasks(nd);syncKbTasks(nd);logIt(nd,'거래 수정·재진단');deals[i]=nd;toast('거래가 수정되었습니다');
+  }else{
+    nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
+    genStageTasks(nd,0);syncRiskTasks(nd);logIt(nd,'거래 등록');deals.unshift(nd);toast('거래가 등록되었습니다 — 절차가 자동 생성되었습니다');
+  }
+  render();openDetail(nd.id);
+}
+
+/* ---------- 상세 (탭) ---------- */
+function openDetail(id){curTab='개요';accOpen=null;renderDetail(id);openSheet();}
+function renderDetail(id){
+  const d=deals.find(x=>x.id===id);if(!d)return;editId=id;
+  const tabs=['개요','위험 지표','절차·할 일','계약','결제·회수','회수 시뮬레이터','서류·통관','활동'];
+  const openCnt=(d.tasks||[]).filter(t=>!t.done&&t.stage<=d.stage).length;
+  document.getElementById('sheet').innerHTML=`
+   <div class="sh"><div><h2 style="margin:0;font-size:19px">${esc(d.buyer)} <span class="badge ${d.level}" style="vertical-align:middle">${relabel(d.level)} ${d.score}</span></h2>
+     <div class="mut" style="font-size:12.5px;margin-top:4px">${esc(d.item)}${d.cat?' · '+d.cat:''} · ${esc(d.country)} · $${d.amt.toLocaleString()} · ${PAY[d.pay]}${d.inco?' · '+d.inco:''}</div></div>
+     <div style="display:flex;gap:8px"><button class="btn ghost sm" onclick="formSheet(deals.find(x=>x.id===${id}))">수정</button><button class="x" onclick="closeSheet()">✕</button></div></div>
+   <div class="tabs">${tabs.map(t=>`<button class="${curTab===t?'on':''}" onclick="curTab='${t}';renderDetail(${id})">${t}${t==='절차·할 일'&&openCnt?` (${openCnt})`:''}</button>`).join('')}</div>
+   <div class="sb" id="tabbody">${detailTab(d)}</div>`;
+}
+function stepperHTML(d){
+  return `<div class="stepper">${STAGES.map((s,i)=>`<div class="step ${i<d.stage?'done':i===d.stage?'cur':''}" onclick="requestStage(${d.id},${i})" title="클릭하여 단계 변경">${i<d.stage?'✓ ':''}${s}</div>`).join('')}</div>`;
+}
+function detailTab(d){
+  const id=d.id;
+  if(curTab==='개요'){
+    const p=stageProgress(d);
+    const riskTasks=(d.tasks||[]).filter(t=>t.src==='risk');
+    return `<div class="riskbox ${d.level}"><b>결제·계약 위험 ${d.score}/100 · ${relabel(d.level)}</b><div class="mut" style="font-size:12.5px;margin-top:4px">${PAY_RISK[d.pay]}</div></div>
+      <label>진행 단계 (클릭으로 이동 — 필수 절차 미완료 시 확인 요청)</label>${stepperHTML(d)}
+      ${p.total?`<label>현 단계(${STAGES[d.stage]}) 절차 진행률</label><div class="prog ${p.pct<100?'warn':''}" style="height:8px;margin:2px 0 4px"><i style="width:${p.pct}%"></i></div><div class="progl"><span></span><span>${p.done}/${p.total} 완료</span></div>`:''}
+      <label style="margin-top:14px">위험조치 권장 (이행 시 체크)</label>
+      <div>${riskTasks.length?riskTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)}</span></div>`).join(''):'<div class="mut" style="font-size:13px">추가 위험조치 없음</div>'}
+      <div class="mut" style="font-size:12px;margin-top:8px">${DISCLAIMER}</div></div>
+      <div style="margin-top:14px"><button class="btn line sm" onclick="printReport(${id})">🖨 리스크 리포트 인쇄</button></div>`;
+  }
+  if(curTab==='위험 지표'){
+    const parts=(assess(d).parts);const hist=buyerHistory(d);
+    const naCnt=(d.credit==='NA'?1:0)+(!d.inco?1:0)+(!d.insp?1:0);
+    const fraud=d.fraud||[];const fn=fraud.filter(Boolean).length;
+    return `<div class="riskbox ${d.level}"><b>거래 위험 참고 지표(Risk Indicator) — ${relabel(d.level)}</b> <span class="mut" style="font-size:12px">(점수 ${d.score}/100은 보조 정보)</span></div>
+      <label>왜 이 지표인가 — 항목별 브레이크다운</label>
+      <table style="margin-bottom:6px"><thead><tr><th>구성요소</th><th style="text-align:right">가점</th></tr></thead><tbody>
+      ${parts.map(p=>`<tr><td>${esc(p.k)}</td><td style="text-align:right;font-weight:700">${p.v>0?'+'+p.v:'0'}</td></tr>`).join('')}
+      <tr><td><b>합계</b></td><td style="text-align:right"><b>${d.score}</b></td></tr></tbody></table>
+      ${naCnt?`<div class="mut" style="font-size:12.5px;margin-bottom:12px">미확인 항목 ${naCnt}개 — 확인(신용조사·조항·인코텀즈 확정) 시 지표 정확도가 올라갑니다.</div>`:''}
+      <label>바이어 판단 근거 (내부/외부 분리)</label>
+      ${hist?`<div class="ksbox">재거래 바이어 — <b>내부 거래이력</b> 기준: 당사 원장 ${hist.n}건(완료 ${hist.done}건, 회수 지연 경험 ${hist.late}건)<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 ${hist.n}건 기준 (내부 데이터)</div></div>`
+      :`<div class="ksbox"><b>신규 거래처</b> — 내부 정보만으로는 상대방 실체·지급능력을 판단할 수 없습니다.<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 신청 안내 ↗</a><select style="width:auto" onchange="setCreditReq(${id},this.value)">${opt(['none','applied','received'],['신용조사 미신청','신청함(결과 대기)','결과 수신'],d.creditReq||'none')}</select></div></div>`}
+      <label>수입국 참고 데이터 (K-SURE 개방데이터)</label>
+      ${ksureInfoHTML(d.country,d.cat)||'<div class="mut" style="font-size:13px">수입국이 입력되지 않았습니다.</div>'}
+      <label style="margin-top:14px">무역사기 패턴 대조 <span class="pill">KOTRA 무역사기 유형 기반</span></label>
+      ${fn?`<div class="riskbox MED" style="padding:10px 14px"><b>사기 의심 신호 ${fn}개 — 주의</b> <span class="mut" style="font-size:12px">(해당 신호가 곧 사기를 뜻하지는 않습니다. 신호가 많을수록 검증을 강화하세요.)</span></div>`:''}
+      ${FRAUD_CHECKS.map((q,i)=>`<div class="trow"><input type="checkbox" ${fraud[i]?'checked':''} onchange="toggleFraud(${id},${i})"><span class="tt">${esc(q)}</span></div>`).join('')}
+      <div class="mut" style="font-size:12px;margin-top:12px">${DISCLAIMER}</div>`;
+  }
+  if(curTab==='회수 시뮬레이터'){
+    const sim=d.sim||{adv:0,cover:'',splits:1};
+    const amt=d.amt||0;const cur=exposure(amt,sim.adv,'');
+    const covered=sim.cover!==''&&sim.cover!==undefined&&sim.cover!==null&&sim.cover!=='0'&&!isNaN(Number(sim.cover))&&sim.cover!=='';
+    const fmt=x=>'$'+Number(x).toLocaleString();
+    const rows=[
+     ['현재 조건 (선수금 '+(sim.adv||0)+'%)',cur],
+     ['선수금 30% 확보 시',exposure(amt,30,'')],
+     ['선수금 50% 확보 시',exposure(amt,50,'')],
+     ['분할선적 2회 시 회차당',Math.round(cur/2*100)/100],
+    ];
+    const n=dday(d.due);const curStage=currentDun(n);
+    const selStage=d._dun||curStage||'D-7';const txt=dunText(selStage,d);
+    return `<label>위험 노출액 (무담보 잔액) <span class="pill">추정 · 입력값 기준</span></label>
+      <div class="row"><div><label>선수금 비율 (%)</label><input type="number" min="0" max="100" value="${sim.adv||0}" onchange="setSim(${id},'adv',this.value)"></div>
+      <div><label>부보율 직접 입력 (%, 선택 — 아는 경우만)</label><input type="number" min="0" max="100" value="${sim.cover??''}" placeholder="미입력 시 계산 안 함" onchange="setSim(${id},'cover',this.value)"></div></div>
+      <div class="riskbox ${d.level}" style="font-size:15px"><b>선수금 ${sim.adv||0}% → 위험 노출액 ${fmt(cur)}</b>
+      ${covered?`<div style="margin-top:6px">입력하신 부보율 ${Number(sim.cover)}% 가정 시 노출 <b>${fmt(exposure(amt,sim.adv,sim.cover))}</b> <span class="pill">가정치</span></div>`:''}
+      <div class="mut" style="font-size:12px;margin-top:6px">부보 시 노출액은 보험 조건(부보율·자기부담)에 따라 축소됩니다 — <a href="https://www.ksure.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">K-SURE 상담으로 확인 ↗</a></div></div>
+      <label>시나리오 비교 <span class="pill">추정 · 입력값 기준</span></label>
+      <table style="margin-bottom:14px"><thead><tr><th>시나리오</th><th style="text-align:right">위험 노출액</th></tr></thead><tbody>
+      ${rows.map(r=>`<tr><td>${r[0]}</td><td style="text-align:right;font-weight:700">${fmt(r[1])}</td></tr>`).join('')}
+      <tr><td>L/C 전환 시</td><td style="text-align:right" class="mut">은행 지급확약으로 노출 성격 변화 — 서류 하자 위험 관리 필요</td></tr></tbody></table>
+      <label>회수 시퀀스 문안 (복사해서 직접 발송 — 자동 발송 없음)</label>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${DUN_STAGES.map(s=>`<button class="pill" style="cursor:pointer;${selStage===s.k?'background:var(--pri);color:#fff':''}" onclick="(deals.find(x=>x.id===${id}))._dun='${s.k}';renderDetail(${id})">${s.lb}${curStage===s.k?' ●':''}</button>`).join('')}</div>
+      ${curStage?`<div class="mut" style="font-size:12px;margin-bottom:8px">현재 만기 기준 해당 단계: <b>${DUN_STAGES.find(s=>s.k===curStage).lb}</b> (●)</div>`:'<div class="mut" style="font-size:12px;margin-bottom:8px">만기까지 7일 이상 남아 발송 단계가 아닙니다 — 문안 미리보기만 제공합니다.</div>'}
+      <label>국문</label><div class="clause">${esc(txt.kr)}</div>
+      <div style="margin:6px 0 12px"><button class="btn ghost sm" onclick="copyDun(${id},'${selStage}','kr')">국문 복사</button></div>
+      <label>영문</label><div class="clause">${esc(txt.en)}</div>
+      <div style="margin:6px 0 12px"><button class="btn ghost sm" onclick="copyDun(${id},'${selStage}','en')">영문 복사</button></div>
+      <div class="mut" style="font-size:12px">${DISCLAIMER}</div>`;
+  }
+  if(curTab==='절차·할 일'){
+    const acc=STAGES.map((s,si)=>{
+      if(si>d.stage+1)return'';
+      const ts=(d.tasks||[]).filter(t=>t.stage===si&&t.src!=='risk');
+      const gen=(d.genStages||[]).includes(si);
+      const done=ts.filter(t=>t.done).length;
+      const st=si<d.stage?(done===ts.length&&ts.length?'done':'todo'):si===d.stage?'cur':'todo';
+      const stl=si<d.stage?(done===ts.length&&ts.length?'완료':'미완 '+(ts.length-done)):si===d.stage?'진행 중':'예정';
+      const open=accOpen===null?si===d.stage:accOpen===si;
+      const body=!gen?`<div class="mut" style="font-size:12.5px;padding:4px 2px">이 단계에 진입하면 절차가 자동 생성됩니다.</div>`
+        :TRACKS.map(tr=>{
+          const g=ts.filter(t=>t.track===tr);if(!g.length)return'';
+          return `<div style="margin:8px 0 4px"><span class="trk"><i style="background:${TRACK_C[tr]}"></i>${tr}</span></div>`+
+            g.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}</div>`).join('');
+        }).join('');
+      return `<div class="sacc"><div class="hd" onclick="accOpen=${open?'-1':si};renderDetail(${id})"><span>${si+1}. ${s}</span><span class="st ${st}">${stl}</span><span style="margin-left:auto;color:#98a0b3">${gen?done+'/'+ts.length:''} ${open?'▾':'▸'}</span></div>${open?`<div class="bd">${body}</div>`:''}</div>`;
+    }).join('');
+    return `<label>진행 단계</label>${stepperHTML(d)}
+      ${acc}
+      <div style="display:flex;gap:8px;margin-top:12px"><input id="mt_${id}" placeholder="할 일 직접 추가 (예: 샘플 발송 후 피드백 확인)" onkeydown="if(event.key==='Enter')addManualTask(${id})"><button class="btn sm" onclick="addManualTask(${id})">추가</button></div>`;
+  }
+  if(curTab==='계약'){
+    return `<label>계약 방어 상태</label><div style="margin-bottom:12px"><span class="pill">${d.insp?'✔ 검사·클레임 기한 명시':'✕ 검사·클레임 기한 미설정'}</span><span class="pill">${d.inco?'✔ 인코텀즈 '+d.inco:'✕ 인코텀즈 미선택'}</span></div>
+      <label>리스크관리 계약 조항 (참고용 · 복사)</label><div class="clause" id="clause_${id}">${esc(clauses(d))}</div>
+      <div style="margin-top:8px"><button class="btn ghost sm" onclick="copyClause(${id})">문구 복사</button> <span class="mut" style="font-size:12px">최종 검토·확정은 변호사</span></div>`;
+  }
+  if(curTab==='결제·회수'){
+    const n=dday(d.due);
+    const payTasks=(d.tasks||[]).filter(t=>t.track==='결제'&&t.stage<=d.stage);
+    return `<div class="row"><div><label>결제방식</label><div class="pill" style="font-size:13px">${PAY[d.pay]}</div><div class="mut" style="font-size:12.5px;margin-top:6px">${PAY_RISK[d.pay]}</div></div>
+      <div><label>결제 만기 / 회수 상태</label><div style="font-size:15px;font-weight:700">${d.due?esc(d.due):'미설정'} ${ddBadge(d)}</div>${d.due&&d.stage<5&&n!==null?`<div class="mut" style="font-size:12.5px;margin-top:5px">${n<0?'⚠ 만기 초과 — 회수 독촉 및 K-SURE 부보 여부 확인':n<=7?'임박 — 회수 준비':'정상'}</div>`:''}</div></div>
+      ${payTasks.length?`<label>결제 관련 할 일</label>${payTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}</div>`).join('')}`:''}
+      <div class="riskbox ${d.level}" style="margin-top:10px"><b>결제 안전 권유</b><ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${(d.recs||[]).filter(r=>r.includes('[결제]')).map(r=>'<li>'+r+'</li>').join('')||'<li>추가 조치 없음</li>'}</ul></div>
+      <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 단기수출보험 바로가기 ↗</a>`;
+  }
+  if(curTab==='서류·통관'){
+    const docTasks=(d.tasks||[]).filter(t=>(t.track==='서류'||t.track==='물류·통관')&&t.stage<=d.stage);
+    const kbs=kbRules(d);
+    return `<label>통관·원산지</label><div style="margin-bottom:8px"><span class="pill">${d.newmkt?'⚠ 신규 수입국 — 검역·라벨 사전 확인':'기존 수입국'}</span>${d.cat&&CATREC[d.cat]?`<span class="pill">${d.cat} 유의</span>`:''}</div>
+      ${d.cat&&CATREC[d.cat]?`<div class="mut" style="font-size:12.5px;margin-bottom:12px">${CATREC[d.cat].replace(/<[^>]+>/g,'')}</div>`:''}
+      ${kbs.length?`<label>이 거래에 적용되는 품목×수입국 규칙 (${kbs.length})</label><div style="margin-bottom:12px">${kbs.map(r=>`<div class="rec" style="border-top:1px dashed var(--line);padding:8px 0"><span>📋</span><div>${esc(r.note)}${r.task?` <span class="pill">→ ${STAGES[r.task.st]} 단계 할 일 자동 생성</span>`:''}</div></div>`).join('')}</div>`:''}
+      ${docTasks.length?`<label>서류·물류 할 일</label>${docTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}<span class="pill">${STAGES[t.stage]}</span></div>`).join('')}`:'<div class="mut" style="font-size:13px">아직 생성된 서류·물류 절차가 없습니다.</div>'}
+      <div class="mut" style="font-size:13px;margin:12px 0">FTA 특혜관세·원산지 판정은 FTA-PASS·관세사로 연결합니다.</div>
+      <label>전문기관 연결</label><div class="links">${LINKS.slice(0,4).map(l=>`<a href="${l[2]}" target="_blank" rel="noopener"><span>${l[0]}<div class="mut" style="font-weight:400;font-size:12px">${l[1]}</div></span><span>↗</span></a>`).join('')}</div>`;
+  }
+  // 활동
+  return `<label>메모</label><textarea id="d_notes" rows="3" oninput="saveNotes(${id})" placeholder="협의 내용·후속 일정 등">${esc(d.notes||'')}</textarea>
+    <label style="margin-top:14px">활동 로그</label><div class="log">${(d.log||[]).map(x=>`<div>${x.t} — ${esc(x.msg)}</div>`).join('')||'<div class="mut">기록 없음</div>'}</div>`;
+}
+function saveNotes(id){const d=deals.find(x=>x.id===id);d.notes=document.getElementById('d_notes').value;save();}
+function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];d.fraud[i]=!d.fraud[i];logIt(d,(d.fraud[i]?'사기 신호 체크: ':'사기 신호 해제: ')+FRAUD_CHECKS[i].slice(0,30));save();renderDetail(id);}
+function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
+function setSim(id,k,val){const d=deals.find(x=>x.id===id);d.sim=d.sim||{adv:0,cover:'',splits:1};d.sim[k]=val===''?'':Math.max(0,Math.min(100,Number(val)||0));save();renderDetail(id);}
+function copyDun(id,stage,lang){const d=deals.find(x=>x.id===id);const t=dunText(stage,d)[lang];copyText(t);logIt(d,`회수 문안 복사 (${stage}·${lang==='kr'?'국문':'영문'})`);save();toast('문안이 복사되었습니다 — 발송은 직접 진행하세요');}
+function delDeal(id){if(confirm('이 거래를 삭제할까요?')){deals=deals.filter(x=>x.id!==id);closeSheet();render();toast('삭제되었습니다');}}
+function copyText(t){
+  try{navigator.clipboard.writeText(t);return;}catch(e){}
+  try{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}catch(e){}
+}
+function copyClause(id){const t=document.getElementById('clause_'+id).textContent;copyText(t);const d=deals.find(x=>x.id===id);logIt(d,'계약 조항 문구 복사');save();toast('계약 조항이 복사되었습니다');}
+function printReport(id){const d=deals.find(x=>x.id===id);const w=window.open('','_blank');
+  const openT=(d.tasks||[]).filter(t=>!t.done&&t.stage<=d.stage);
+  w.document.write(`<html><head><meta charset="utf-8"><title>리스크 리포트 - ${esc(d.buyer)}</title><style>body{font-family:"Malgun Gothic";padding:34px;color:#1b2333}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left}li{margin:5px 0}.mut{color:#666;font-size:12px}</style></head><body>
+   <h1>ExportOS 거래 리스크 리포트</h1><p class="mut">발행 ${now()} · 참고용(확정은 전문기관)</p>
+   <table><tr><th>바이어</th><td>${esc(d.buyer)}</td><th>품목</th><td>${esc(d.item)}</td></tr>
+   <tr><th>수입국</th><td>${esc(d.country)}</td><th>금액</th><td>$${d.amt.toLocaleString()}</td></tr>
+   <tr><th>결제방식</th><td>${PAY[d.pay]}</td><th>만기</th><td>${d.due||'-'}</td></tr>
+   <tr><th>진행 단계</th><td>${d.stage+1}. ${STAGES[d.stage]}</td><th>위험 점수</th><td><b>${d.score}/100 (${relabel(d.level)})</b></td></tr></table>
+   <h3>권장 조치</h3><ul>${(d.recs||[]).map(r=>'<li>'+r.replace(/<[^>]+>/g,'')+'</li>').join('')}</ul>
+   <h3>미완료 절차 (${openT.length})</h3><ul>${openT.map(t=>`<li>[${STAGES[t.stage]}·${t.track}] ${esc(t.title)}${t.due?' — 마감 '+t.due:''}</li>`).join('')||'<li>없음</li>'}</ul>
+   <h3>리스크관리 계약 조항(참고)</h3><pre style="white-space:pre-wrap;font-size:12.5px;background:#f6f7fb;padding:12px;border-radius:8px">${esc(clauses(d))}</pre>
+   </body></html>`);w.document.close();setTimeout(()=>w.print(),350);
+}
+
+/* ---------- CSV 가져오기/템플릿 ---------- */
+const CSV_HEAD='품목,카테고리,바이어,수입국,금액USD,신용확인(A/B/C/D/NA),결제방식(OA/TT_A/DA/DP/LC/TT_P),인코텀즈,만기일(YYYY-MM-DD),검사조항(Y/N),신규수입국(Y/N),단계(1-6)';
+function csvTemplate(){
+  const b=new Blob(['﻿'+CSV_HEAD+'\n냉동 수산물 (0303.89),수산식품,Sample Buyer Inc,미국,50000,NA,OA,FOB,2026-09-30,N,Y,2\n'],{type:'text/csv'});
+  const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_template.csv';a.click();toast('템플릿을 내려받았습니다');
+}
+function importCSV(inp){
+  const f=inp.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    const lines=String(r.result).replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
+    let ok=0,skip=0;
+    lines.slice(1).forEach(l=>{
+      const c=l.split(',').map(x=>x.trim());
+      if(c.length<7){skip++;return;}
+      const pay=PAY[c[6]]?c[6]:'OA';
+      const nd={id:seq++,item:c[0]||'(품목)',cat:CATS.includes(c[1])?c[1]:'일반',buyer:c[2]||'(바이어)',country:c[3]||'-',amt:Number(c[4])||0,credit:['A','B','C','D','NA'].includes(c[5])?c[5]:'NA',pay,inco:c[7]||'',due:/^\d{4}-\d{2}-\d{2}$/.test(c[8])?c[8]:'',insp:(c[9]||'').toUpperCase()==='Y',newmkt:(c[10]||'').toUpperCase()==='Y'};
+      const st=Math.min(5,Math.max(0,(Number(c[11])||1)-1));
+      const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
+      nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
+      for(let i=0;i<=st;i++)genStageTasks(nd,i);nd.stage=st;
+      syncRiskTasks(nd);logIt(nd,'CSV 일괄 등록');deals.unshift(nd);ok++;
+    });
+    inp.value='';render();toast(`가져오기 완료 — ${ok}건 등록${skip?`, ${skip}건 건너뜀`:''}`);
+  };
+  r.readAsText(f,'utf-8');
+}
+
+/* ---------- 유틸 ---------- */
+function openSheet(){document.getElementById('mask').classList.add('on');}
+function closeSheet(){document.getElementById('mask').classList.remove('on');}
+document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
+function go(v){['dash','tasks','board','ledger','res','data'].forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
+document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(a&&a.dataset.v)go(a.dataset.v);});
+function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
+const v=id=>document.getElementById(id).value.trim();
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function opt(vals,labels,sel){return vals.map((x,i)=>`<option value="${x}" ${x===sel?'selected':''}>${labels[i]}</option>`).join('');}
+function exportJSON(){const b=new Blob([JSON.stringify(deals,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료');}
+
+/* ---------- 시드 ---------- */
+function seedData(){
+  const t=new Date(),fmt=o=>{const x=new Date(t);x.setDate(x.getDate()+o);return x.toISOString().slice(0,10);};
+  [['마른김 (1212.21)','수산식품','Pacific Nori LLC','미국',80000,'NA','OA','',false,true,4,fmt(-3),0.9],
+   ['조미김 (2008.99)','수산식품','Gulf Trading Co.','UAE',35000,'C','TT_A','CIF',false,true,2,fmt(5),0.5],
+   ['기초 화장품 세트 (3304.99)','화장품','LA Beauty Dist.','미국',48000,'C','TT_A','',false,true,2,fmt(12),0.3],
+   ['자동차 부품 (8708.99)','기계·부품','Hanoi Auto Parts','베트남',120000,'B','DA','FOB',false,false,3,fmt(18),0.7],
+   ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'A','LC','CFR',true,false,3,fmt(30),0.85],
+   ['마른김 (1212.21)','수산식품','Berlin Asia Import','독일',22000,'B','TT_P','DAP',true,true,1,fmt(44),0.4]]
+  .forEach(a=>{
+    const d={id:seq++,item:a[0],cat:a[1],buyer:a[2],country:a[3],amt:a[4],credit:a[5],pay:a[6],inco:a[7],insp:a[8],newmkt:a[9],due:a[11]};
+    const r=assess(d);d.score=r.score;d.level=r.level;d.recs=r.recs;
+    d.stage=0;d.tasks=[];d.tseq=0;d.genStages=[];d.notes='';d.log=[{t:now(),msg:'거래 등록(샘플)'}];
+    for(let i=0;i<=a[10];i++)genStageTasks(d,i);d.stage=a[10];
+    /* 이전 단계 절차는 대부분 완료 처리해 실사용 화면처럼 */
+    let k=0;d.tasks.forEach(tk=>{k++;if(tk.stage<d.stage)tk.done=(k%10)/10<0.95;else tk.done=(k%10)/10<a[12]-0.3;});
+    syncRiskTasks(d);deals.push(d);
+  });
+}
+function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
+ksureLoad();
+load();if(!deals.length)seedData();
+deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
+selfTest(); /* 회귀 테스트 — 결과는 [데이터 관리] 뷰와 콘솔에 표시 */
+render();
+
+/* ---------- 샌드박스 호환 레이어 ----------
+   아티팩트 뷰어 등 CSP가 인라인 이벤트 속성(onclick=...)을 차단하는 환경에서는
+   속성이 실행되지 않으므로, 차단 감지 시 이벤트 위임으로 속성 문자열을 실행한다.
+   로컬(file://·localhost)에서는 인라인이 살아 있으므로 이 레이어는 비활성(이중 실행 없음). */
+(function(){
+  let dead=false;
+  try{const t=document.createElement('div');t.innerHTML='<b onclick="void 0"></b>';dead=typeof t.firstChild.onclick!=='function';}catch(e){dead=true;}
+  if(!dead)return;
+  try{new Function('return 1');}catch(e){console.warn('[ExportOS] CSP가 eval도 차단 — 인라인 핸들러 우회 불가');return;}
+  const run=(el,code,e)=>{try{new Function('event',code).call(el,e);}catch(err){console.error('[ExportOS handler]',err);}};
+  [['click','onclick'],['input','oninput'],['change','onchange'],['keydown','onkeydown'],
+   ['dragstart','ondragstart'],['dragover','ondragover'],['dragleave','ondragleave'],['drop','ondrop']].forEach(([type,attr])=>{
+    document.addEventListener(type,e=>{
+      let el=e.target;
+      while(el&&el.getAttribute){
+        const code=el.getAttribute(attr);
+        if(code){run(el,code,e);return;}
+        el=el.parentNode;
+      }
+    },true);
+  });
+  console.log('[ExportOS] 인라인 핸들러 차단 감지 — 위임 모드 활성');
+})();
+/* 저장 불가 환경 안내 (아티팩트 등) */
+setTimeout(()=>{if(!_persist)toast('이 환경에서는 브라우저 저장이 제한됩니다 — 새로고침 시 데이터가 초기화될 수 있습니다');},900);
+</script>
+</body>
+</html>
