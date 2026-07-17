@@ -231,7 +231,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
   <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
   <button class="btn" onclick="openNew()">＋ 신규 거래</button>
-  <div class="avatar">김</div>
+  <div class="avatar" id="avatar" onclick="openSettings()" style="cursor:pointer" title="설정 열기">👤</div>
 </div>
 <div class="wrap">
   <aside class="side">
@@ -249,6 +249,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="policy"><span class="i">📏</span> 거래 정책</a>
     <div class="grp">서류·일정</div>
     <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
+    <a data-v="docslib"><span class="i">📚</span> 서류 라이브러리</a>
     <a data-v="calendar"><span class="i">📅</span> 회수 캘린더</a>
     <div class="grp">인사이트</div>
     <a data-v="insights"><span class="i">📈</span> 인사이트</a>
@@ -310,6 +311,11 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <section id="v-docs" class="hide">
       <div class="phead"><div><h1>거래 서류함</h1><div class="d">거래별 필수 서류 상태를 기록합니다. 클릭: 미등록 → 등록 → 확정. (파일 자체 저장은 브라우저 저장 한계로 지원 범위 외 — 이름·메모만 기록)</div></div></div>
       <div class="panel" id="docsbody"></div>
+    </section>
+    <!-- DOC LIBRARY -->
+    <section id="v-docslib" class="hide">
+      <div class="phead"><div><h1>무역 서류 라이브러리</h1><div class="d">주요 수출 서류의 용도·시점·발행 주체를 한눈에. 세부 법적 요건은 은행·관세사에 확인하세요.</div></div></div>
+      <div class="panel" id="doclibbody"></div>
     </section>
     <!-- CALENDAR -->
     <section id="v-calendar" class="hide">
@@ -384,6 +390,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
       </div>
       <div class="panel"><h2>품목별 통관·인증 유의사항</h2><div id="catguide"></div></div>
       <div class="panel"><h2>표준 수출 절차 (ExportOS가 자동 생성하는 할 일)</h2><div id="procguide"></div></div>
+      <div class="panel"><h2>📢 관세청·기관 공지 <span class="pill">수동 갱신 — 자동 수집 아님</span></h2><div id="notices"></div></div>
     </section>
     <!-- DATA MANAGEMENT -->
     <section id="v-data" class="hide">
@@ -497,11 +504,14 @@ const STAGE_TASKS=[
   {t:'선복 예약(부킹)·선적 일정 확정',tr:'물류·통관',req:1,off:12},
   {t:'상업송장(C/I)·포장명세서(P/L) 작성',tr:'서류',req:1,off:12},
  ],
- [ // 3 선적·통관
-  {t:'수출신고·적재 확인 (관세사 연결)',tr:'물류·통관',req:1,off:3},
-  {t:'B/L 수취, 원산지증명서(C/O) 발급 (FTA 특혜 확인)',tr:'서류',req:1,off:5},
+ [ // 3 선적·통관 — 수출 절차 내비게이터 (정보·체크리스트·공식 링크. 절차 판단·신고 대행 아님)
+  {t:'수출신고 방식 결정 — 직접(유니패스) 또는 관세사 위임',tr:'물류·통관',req:1,off:2,link:'https://unipass.customs.go.kr',warn:'결정 지연 시 선적 일정 전체가 밀립니다'},
+  {t:'품목 수출요건 확인 — HS별 요건확인 대상 여부를 유니패스에서 확인 (판정은 관세사·세관)',tr:'물류·통관',req:1,off:2,link:'https://unipass.customs.go.kr',warn:'요건 미확인 시 통관 보류 위험'},
+  {t:'FTA 활용 여부 결정 — 원산지증명(C/O) 준비',tr:'서류',req:0,off:3,link:'https://www.customs.go.kr/ftaportalkor',warn:'미활용 시 바이어 관세 부담 증가로 가격경쟁력 저하'},
+  {t:'수출신고 및 신고필증 확보 — 수리일을 서류·통관 탭에 입력하면 적재 기한 D-day 자동 등록',tr:'물류·통관',req:1,off:3,link:'https://unipass.customs.go.kr',warn:'수리일부터 30일 내 적재 필요(연장 가능) — 경과 시 신고 취하·과태료 위험'},
+  {t:'선적·적하보험 확인, B/L·AWB 수취',tr:'물류·통관',req:1,off:5,warn:'보험 공백 시 운송 사고 손실이 무담보가 됩니다'},
   {t:'결제방식별 선적서류 처리 (L/C 매입 · D/A·D/P 추심 의뢰 · O/A 송부)',tr:'서류',req:1,off:5},
-  {t:'수입국 검역·인증 요건 최종 확인',tr:'물류·통관',req:0,off:3},
+  {t:'관세환급 대상 여부 확인 (소요량·간이정액 — 신청은 기업·관세사)',tr:'기타',req:0,off:7,link:'https://www.customs.go.kr',warn:'대상인데 놓치면 납부 관세 회수 기회 상실'},
   {t:'선적 통지(Shipping Advice) 발송',tr:'영업',req:0,off:2},
  ],
  [ // 4 회수
@@ -616,7 +626,7 @@ function selfTest(){
 let deals=[],seq=1,dragId=null,editId=null,curTab='개요',accOpen=null;
 
 /* ===== UI 개편 상태 (설정·정책·가이드·규칙 토글·바이어 메타) ===== */
-let PROFILE={name:'',cat:'',contact:''};              /* 회사 정보 (수출자 프로필) */
+let PROFILE={name:'',company:'',item:'',cat:'',contact:''}; /* 수출자 프로필 (이름·회사·주력 품목) */
 let POLICY={nolimit:50000,advmin:30,remind:7};        /* 거래 정책 기본값 (수정 가능) */
 let GUIDE={diag:false,collapsed:false};               /* 시작 가이드 진행 */
 let RULES_OFF=[];                                     /* 미사용 규칙 id 목록 */
@@ -666,7 +676,41 @@ function buyerList(){
     return{name:b.name,country:last.country,cat:last.cat,credit:last.credit,deals:b.deals,late,done:b.deals.filter(x=>x.stage===5).length,req:(BUYER_META[b.name]||{}).req||'none'};
   }).sort((a,b)=>a.name.localeCompare(b.name));
 }
-function setBuyerReq(name,val){BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].req=val;uiSave();render();}
+function bmHist(name,msg){const m=BUYER_META[name]=BUYER_META[name]||{};(m.history=m.history||[]).unshift({t:now(),msg});}
+function setBuyerReq(name,val){
+  const lb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val;
+  BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].req=val;
+  bmHist(name,'K-SURE 신용조사 상태 변경: '+lb);
+  const d=deals.find(x=>String(x.buyer).trim()===name);if(d){logIt(d,'신용조사 상태 변경('+name+'): '+lb);}
+  uiSave();save();render();
+}
+/* 신용조사 결과 수신 시 — 수기 입력한 결과를 해당 바이어의 진행 거래 위험 지표에 반영 */
+function applyBuyerGrade(name,grade){
+  if(!grade)return;
+  BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].grade=grade;
+  bmHist(name,'신용조사 결과 수기 입력: '+grade+' — 진행 거래 재진단');
+  deals.filter(x=>String(x.buyer).trim()===name&&x.stage<5).forEach(d=>{
+    d.credit=grade;const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);
+    logIt(d,'신용조사 결과 반영: 신용확인 상태 '+grade);
+  });
+  uiSave();save();render();toast('조사 결과가 위험 지표에 반영되었습니다');
+}
+/* 공개 기업등록부 — 실존 확인된 공식 레지스트리만 수록 (임의 URL 생성 금지) */
+const REGISTRIES=[
+ {country:'영국',name:'Companies House',url:'https://find-and-update.company-information.service.gov.uk',note:'영국 법인 등기 공식 조회'},
+ {country:'싱가포르',name:'ACRA BizFile',url:'https://www.bizfile.gov.sg',note:'싱가포르 기업청 공식 등록부'},
+ {country:'홍콩',name:'Companies Registry',url:'https://www.cr.gov.hk',note:'홍콩 회사등기처'},
+ {country:'일본',name:'국세청 법인번호 공표사이트',url:'https://www.houjin-bangou.nta.go.jp',note:'일본 법인번호·상호 공식 조회'},
+ {country:'중국',name:'국가기업신용정보공시시스템(GSXT)',url:'https://www.gsxt.gov.cn',note:'중국 시장감독총국 기업신용 공시'},
+ {country:'독일',name:'Unternehmensregister',url:'https://www.unternehmensregister.de',note:'독일 연방 기업등록부'},
+ {country:'프랑스',name:'Infogreffe',url:'https://www.infogreffe.fr',note:'프랑스 상업법원 등기부'},
+ {country:'네덜란드',name:'KVK Business Register',url:'https://www.kvk.nl',note:'네덜란드 상공회의소 등록부'},
+ {country:'호주',name:'ABN Lookup',url:'https://abr.business.gov.au',note:'호주 사업자번호 공식 조회'},
+ {country:'인도',name:'MCA Company Search',url:'https://www.mca.gov.in',note:'인도 기업부 등록 조회'},
+ {country:'베트남',name:'국가기업등록포털',url:'https://dangkykinhdoanh.gov.vn',note:'베트남 기획투자부 기업등록'},
+ {country:'미국',name:'주별 Secretary of State 기업 검색',url:null,note:'연방 통합 등록부 없음 — 바이어 소재 주(州)의 SoS 사이트에서 검색'},
+];
+function registriesFor(country){return REGISTRIES.filter(r=>String(country||'').includes(r.country));}
 
 function load(){try{const s=JSON.parse(sGet(KEY));if(s){deals=s.deals||[];seq=s.seq||1;}}catch(e){}}
 function save(){sSet(KEY,JSON.stringify({deals,seq}));}
@@ -719,7 +763,7 @@ function genStageTasks(d,si){
     let due=null;
     if(tp.dueOff!==undefined&&d.due)due=addDays(d.due,tp.dueOff);
     else if(tp.off!==undefined)due=addDays(entry,tp.off);
-    d.tasks.push(newTask(d,{title:tp.t,track:tp.tr,stage:si,req:!!tp.req,due}));
+    d.tasks.push(newTask(d,{title:tp.t,track:tp.tr,stage:si,req:!!tp.req,due,link:tp.link,warn:tp.warn}));
   });
   /* 품목×수입국 KB 규칙의 해당 단계 할 일 추가 */
   kbRules(d).filter(r=>r.task&&r.task.st===si).forEach(r=>{
@@ -842,11 +886,12 @@ function taskStats(){
 }
 
 /* ---------- 렌더 ---------- */
-function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderCal();renderInsights();renderKsurePage();renderPartners();renderBadge();save();}
+function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderDocLib();renderCal();renderInsights();renderKsurePage();renderPartners();renderNotices();renderBadge();save();}
 function renderBadge(){
   const s=taskStats();const n=s.over.length+s.today.length;
   const b=document.getElementById('taskbadge');
   b.classList.toggle('hide',!n);b.textContent=n;
+  document.getElementById('avatar').textContent=PROFILE.name?PROFILE.name.trim()[0]:'👤';
 }
 function renderToday(){
   const s=taskStats();
@@ -861,7 +906,7 @@ function renderToday(){
   const total=rows.reduce((a,r)=>a+r[2],0);
   const hr=new Date().getHours();const gr=hr<11?'좋은 아침입니다':hr<18?'안녕하세요':'수고 많으셨습니다';
   window._heroActs=rows.map(r=>r[3]);
-  document.getElementById('today').innerHTML=`<div class="hi">👋 ${PROFILE.name?esc(PROFILE.name):'대표'}님, ${gr}</div>
+  document.getElementById('today').innerHTML=`<div class="hi">👋 ${PROFILE.name?esc(PROFILE.name):'사용자'}님, ${gr}</div>
     <div class="hs">오늘 확인이 필요한 업무 <b style="color:var(--pri-d)">${total}건</b>${total?' — 아래에서 바로 처리하세요.':''}</div>
     ${rows.length?`<div class="todo">${rows.map((r,i)=>`<div class="ti" onclick="_heroActs[${i}]()"><span class="ic">${r[0]}</span><span class="tx">${r[1]}</span><span class="cn">${r[2]}건</span><span class="ar">→</span></div>`).join('')}</div>`:`<div class="mut" style="margin-top:10px">지금 급히 처리할 업무가 없습니다. 👍</div>`}`;
 }
@@ -921,11 +966,12 @@ function renderTasks(){
   const html=grp('🔴','기한 초과',over)+grp('📌','오늘·7일 내',soon)+grp('🗂','예정',later)+grp('✅','완료',done);
   document.getElementById('tasklist').innerHTML=html||'<div class="empty">표시할 할 일이 없습니다. 새 거래를 등록하면 단계별 절차가 자동 생성됩니다.</div>';
 }
+const taskLink=t=>t.link?` <a href="${t.link}" target="_blank" rel="noopener" title="공식 사이트" onclick="event.stopPropagation()">↗</a>`:'';
 function taskRow({d,t}){
-  return `<div class="trow ${t.done?'done':''}">
+  return `<div class="trow ${t.done?'done':''}" ${t.warn?`title="놓치면: ${esc(t.warn)}"`:''}>
     <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${d.id},${t.id})">
     <span class="trk"><i style="background:${TRACK_C[t.track]||'#667'}"></i>${t.track}</span>
-    <span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>
+    <span class="tt">${esc(t.title)}${taskLink(t)} ${t.req?'<span class="req">필수</span>':''}</span>
     ${tdd(t)}
     <span class="dc" onclick="openDetail(${d.id})">${esc(d.buyer)} · ${STAGES[t.stage]}</span>
   </div>`;
@@ -999,6 +1045,28 @@ function ksCommit(){
   ksureSave();_csv=null;
   document.getElementById('ksmap').innerHTML='<span class="badge LOW">저장 완료</span> <span class="mut" style="font-size:12px">'+out.length+'건 탑재되었습니다.</span>';
   render();toast('K-SURE 데이터가 탑재되었습니다');
+}
+
+/* 규제·공지 자료실 — 큐레이션 링크(수동 갱신, 항목 임의 생성 금지: 빈 상태로 출고) */
+let NOTICES=[];try{NOTICES=JSON.parse(sGet('exportos_notices_v1'))||[];}catch(e){}
+function noticesSave(){sSet('exportos_notices_v1',JSON.stringify(NOTICES));}
+function addNotice(){
+  const t=v('nt_title'),s=v('nt_src'),dt=v('nt_date'),u=v('nt_url');
+  if(!t||!s||!dt){toast('제목·출처·게시일은 필수입니다');return;}
+  NOTICES.unshift({t,s,dt,u,chk:iso()});noticesSave();renderNotices();toast('공지가 추가되었습니다');
+}
+function delNotice(i){NOTICES.splice(i,1);noticesSave();renderNotices();}
+function renderNotices(){
+  const el=document.getElementById('notices');if(!el)return;
+  el.innerHTML=`
+   ${NOTICES.length?`<table><thead><tr><th>제목</th><th>출처</th><th>게시일</th><th>확인일</th><th></th></tr></thead><tbody>
+    ${NOTICES.map((n,i)=>`<tr><td>${n.u?`<a href="${esc(n.u)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(n.t)} ↗</a>`:esc(n.t)}</td><td>${esc(n.s)}</td><td>${esc(n.dt)}</td><td>${esc(n.chk)}</td><td><span class="dc" onclick="delNotice(${i})">삭제</span></td></tr>`).join('')}</tbody></table>`
+   :'<div class="empty">등록된 공지가 없습니다 — 관리자가 아래에서 공지를 추가하세요.</div>'}
+   <div class="toolbar" style="margin-top:10px">
+    <input type="text" id="nt_title" placeholder="공지 제목" style="min-width:200px"><input type="text" id="nt_src" placeholder="출처 (예: 관세청)" style="width:130px">
+    <input type="date" id="nt_date" style="width:150px"><input type="text" id="nt_url" placeholder="URL (선택)" style="min-width:180px">
+    <button class="btn line sm" onclick="addNotice()">추가</button>
+   </div>`;
 }
 
 /* KB 규칙 찾기 (자료·연결) */
@@ -1077,14 +1145,32 @@ function renderBuyers(){
   const bd=document.getElementById('bdetail');
   if(!b){bd.innerHTML='<div class="empty">바이어를 선택하세요.</div>';return;}
   const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
+  const nm=esc(b.name).replace(/'/g,"\\'");
+  const regs=registriesFor(b.country);
+  const meta=BUYER_META[b.name]||{};
+  const actv=b.deals.find(x=>x.stage<5);
   bd.innerHTML=`<h2>${esc(b.name)} <span class="pill">${esc(b.country)}</span><span class="pill">${b.cat}</span></h2>
-   <div class="row"><div><label>신용확인 상태 (최근 거래 기준)</label><div class="pill" style="font-size:13px">${b.credit==='NA'?'미확인(조사 전)':'K-SURE 조사 결과 '+b.credit}</div></div>
-   <div><label>K-SURE 신용조사 신청 상태</label><select style="width:auto" onchange="setBuyerReq('${esc(b.name).replace(/'/g,"\\'")}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select></div></div>
    <label>내부 거래이력 점수 (결정론 — 당사 원장 ${b.deals.length}건 기준)</label>
    <div class="ksbox">완료 ${b.done}건 · 회수 지연 경험 <b>${b.late}건</b>${b.late?' — 재거래 시 선수금·부보 조건 강화 검토':''}<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 (내부 데이터). 외부 지급능력 판단은 K-SURE 신용조사로 확인하세요.</div></div>
-   ${ksureInfoHTML(b.country,b.cat)}
-   <label>거래 이력</label>${tbl(b.deals)}
-   <div style="margin-top:10px"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 안내 ↗</a></div>`;
+   <h2 style="font-size:14.5px;margin:16px 0 8px">🔍 통합 바이어 조사 패널</h2>
+   <label>① 개방 데이터 자동 표시 (국가·업종 기준)</label>
+   ${ksureInfoHTML(b.country,b.cat)||'<div class="mut" style="font-size:12.5px;margin-bottom:10px">국가 정보가 없습니다.</div>'}
+   <label>② K-SURE 국외기업 신용조사 (개별 바이어 정보는 신청 기반 — 검색으로 조회되지 않습니다)</label>
+   <div class="ksbox"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">신청 안내 ↗</a>
+    <select style="width:auto" onchange="setBuyerReq('${nm}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select>
+    ${b.req==='received'?`<span class="mut" style="font-size:12px">결과 등급 입력 →</span><select style="width:auto" onchange="applyBuyerGrade('${nm}',this.value)">${opt(['','A','B','C','D'],['— 선택 —','A (양호)','B (보통)','C (주의)','D (위험)'],meta.grade||'')}</select>`:''}
+   </div><div class="mut" style="font-size:11px;margin-top:6px">현재 신용확인 상태(최근 거래): <b>${b.credit==='NA'?'미확인(조사 전)':b.credit}</b> — 결과 입력 시 진행 거래 위험 지표에 반영되고 활동 로그에 기록됩니다.</div></div>
+   <label>③ 공개 기업등록부 (실존 공식 레지스트리)</label>
+   ${regs.length?`<div class="links">${regs.map(r=>r.url?`<a href="${r.url}" target="_blank" rel="noopener"><span>${esc(r.name)}<div class="mut" style="font-weight:400;font-size:11.5px">${esc(r.note)}</div></span><span>↗</span></a>`:`<div style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:13px"><b>${esc(r.name)}</b><div class="mut" style="font-size:11.5px">${esc(r.note)}</div></div>`).join('')}</div>`
+   :`<div class="ksbox mut">해당 국가의 공식 등록부 정보 없음 — <a href="https://www.kotra.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">KOTRA 해외무역관 확인 권장 ↗</a></div>`}
+   <label>④ 무역사기 패턴 대조 <span class="pill">KOTRA 유형 기반</span>${actv?`<span class="pill">${esc(actv.item)} 거래 기준</span>`:''}</label>
+   ${actv?FRAUD_CHECKS.map((q,i)=>`<div class="trow"><input type="checkbox" ${(actv.fraud||[])[i]?'checked':''} onchange="toggleFraud(${actv.id},${i});renderBuyers()"><span class="tt" style="font-size:12.5px">${esc(q)}</span></div>`).join('')+((actv.fraud||[]).filter(Boolean).length?`<div class="warnbar" style="margin-top:6px">사기 의심 신호 ${(actv.fraud||[]).filter(Boolean).length}개 — 주의 (단정 아님, 검증 강화 권장)</div>`:'')
+   :'<div class="mut" style="font-size:12.5px">진행 중 거래가 없어 점검 대상이 없습니다.</div>'}
+   <label style="margin-top:12px">⑤ 조사 이력 아카이브</label>
+   <div class="log">${(meta.history||[]).map(h=>`<div>${h.t} — ${esc(h.msg)}</div>`).join('')||'<div class="mut">조사 이력이 없습니다.</div>'}</div>
+   <label style="margin-top:14px">거래 이력</label>${tbl(b.deals)}
+   <div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`;
 }
 function renderCredit(){
   const bs=buyerList();const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
@@ -1156,20 +1242,52 @@ function renderPolicy(){
    <h2 style="font-size:15px">현재 위반 감지 ${vio.length}건</h2>
    ${vio.length?vio.map(({d,v})=>`<div class="warnbar" style="cursor:pointer" onclick="openDetail(${d.id})">⚠ <b>${esc(d.buyer)}</b> — ${v}</div>`).join(''):'<div class="mut" style="font-size:13px">위반 거래가 없습니다.</div>'}`;
 }
-/* 거래 서류함 */
-const DOC_SLOTS=['P/I','계약서','B/L','C/O','보험증권'];
-function cycleDoc(id,si){
-  const d=deals.find(x=>x.id===id);d.docs=d.docs||{};const cur=d.docs[si]||{st:0,note:''};
+/* 무역 서류 라이브러리 (설명은 일반론 수준 — 세부 요건은 은행·관세사 확인) */
+const DOC_LIBRARY=[
+ {name:'견적송장 (P/I)',en:'Proforma Invoice',what:'거래 조건(품목·수량·단가·결제)을 제시하는 사전 송장',when:'리드·상담~계약',who:'수출자',need:'공통'},
+ {name:'매매계약서',en:'Sales Contract',what:'거래 조건과 방어조항(검사·클레임·중재 등)을 확정하는 본계약',when:'계약',who:'양 당사자',need:'공통'},
+ {name:'상업송장 (C/I)',en:'Commercial Invoice',what:'실제 선적 물품의 대금 청구·통관 기준 서류',when:'결제·생산~선적',who:'수출자',need:'공통'},
+ {name:'포장명세서 (P/L)',en:'Packing List',what:'포장 단위·중량·수량 명세',when:'결제·생산~선적',who:'수출자',need:'공통'},
+ {name:'선하증권(B/L)·항공화물운송장(AWB)',en:'Bill of Lading / Air Waybill',what:'운송계약·물품 수령 증빙 (해상 B/L은 권리증권)',when:'선적·통관',who:'선사·항공사(포워더)',need:'공통'},
+ {name:'수출신고필증',en:'Export Declaration',what:'세관 수출신고 수리 증빙 — 수리일+30일 내 적재',when:'선적·통관',who:'세관(유니패스)',need:'공통',link:'https://unipass.customs.go.kr'},
+ {name:'원산지증명서 (C/O)',en:'Certificate of Origin',what:'FTA 특혜관세 적용 등을 위한 원산지 증빙',when:'선적·통관',who:'상공회의소·세관/자율발급',need:'FTA',link:'https://www.customs.go.kr/ftaportalkor'},
+ {name:'적하보험증권',en:'Cargo Insurance Policy',what:'운송 중 물품 손해 담보 증빙 (부보 주체는 인코텀즈에 따름)',when:'선적·통관',who:'손해보험사',need:'보험'},
+ {name:'신용장(L/C)·선적서류 세트',en:'L/C & Shipping Documents',what:'은행 지급확약과 그 조건에 맞춘 서류 일체 (UCP 600)',when:'계약~회수',who:'개설은행/수출자',need:'L/C'},
+ {name:'환어음',en:'Bill of Exchange',what:'추심·매입 시 지급 청구 수단',when:'회수',who:'수출자(은행 경유)',need:'L/C'},
+];
+let doclibTab='전체';
+function renderDocLib(){
+  const q=(window._dlq||'').toLowerCase();
+  const cats=['전체','공통','L/C','FTA','보험'];
+  const list=DOC_LIBRARY.filter(x=>(doclibTab==='전체'||x.need===doclibTab)&&(x.name+x.en+x.what).toLowerCase().includes(q));
+  document.getElementById('doclibbody').innerHTML=`
+   <div class="toolbar"><input type="search" placeholder="서류 검색" value="${esc(window._dlq||'')}" oninput="window._dlq=this.value;renderDocLib()" style="max-width:220px">
+   ${cats.map(c=>`<button class="pill" style="cursor:pointer;${doclibTab===c?'background:var(--pri);color:#fff':''}" onclick="doclibTab='${c}';renderDocLib()">${c}</button>`).join('')}</div>
+   <table><thead><tr><th>서류</th><th>무엇인가</th><th>필요 시점</th><th>발행 주체</th><th>구분</th><th></th></tr></thead><tbody>
+   ${list.map(x=>`<tr><td style="font-weight:700">${esc(x.name)}<div class="mut" style="font-size:11px;font-weight:400">${esc(x.en)}</div></td><td style="font-size:12.5px">${esc(x.what)}</td><td style="font-size:12px">${esc(x.when)}</td><td style="font-size:12px">${esc(x.who)}</td><td><span class="pill">${x.need}</span></td><td>${x.link?`<a href="${x.link}" target="_blank" rel="noopener">↗</a>`:''}</td></tr>`).join('')||'<tr><td colspan="6" class="empty">검색 결과가 없습니다.</td></tr>'}</tbody></table>
+   <div class="mut" style="font-size:12px;margin-top:10px">일반 안내이며, 세부 법적 요건·서류 하자 판단은 은행·관세사가 수행합니다.</div>`;
+}
+/* 거래 서류함 — 거래 조건에 따라 슬롯 자동 구성 (needIf 매칭) */
+function docSlots(d){
+  const s=['P/I','계약서','C/I','P/L','B/L·AWB','수출신고필증','C/O'];
+  if(d.pay==='LC')s.push('L/C 선적서류 세트','환어음');
+  const ins=(d.tasks||[]).some(t=>t.title.includes('부보')&&t.done)||(d.sim&&d.sim.cover!==''&&d.sim.cover!==undefined&&d.sim.cover!==null);
+  if(ins)s.push('보험증권');
+  return s;
+}
+function cycleDoc(id,name){
+  const d=deals.find(x=>x.id===id);d.docs=d.docs||{};const cur=d.docs[name]||{st:0,note:''};
   cur.st=(cur.st+1)%3;
-  if(cur.st===1){let n='';try{n=prompt(DOC_SLOTS[si]+' — 문서 이름·메모 (선택)')||'';}catch(e){}cur.note=n;}
-  d.docs[si]=cur;logIt(d,`서류 상태: ${DOC_SLOTS[si]} → ${['미등록','등록','확정'][cur.st]}`);save();renderDocs();
+  if(cur.st===1){let n='';try{n=prompt(name+' — 문서 이름·메모 (선택)')||'';}catch(e){}cur.note=n;}
+  d.docs[name]=cur;logIt(d,`서류 상태: ${name} → ${['미등록','등록','확정'][cur.st]}`);save();renderDocs();
 }
 function renderDocs(){
   const list=deals.filter(d=>d.stage<5);
-  document.getElementById('docsbody').innerHTML=list.length?`<table><thead><tr><th>거래</th><th>서류 (클릭: 미등록→등록→확정)</th></tr></thead><tbody>
-   ${list.map(d=>{d.docs=d.docs||{};return`<tr><td style="white-space:nowrap"><b>${esc(d.buyer)}</b><div class="mut" style="font-size:11px">${STAGES[d.stage]}</div></td>
-   <td>${DOC_SLOTS.map((s,i)=>{const st=(d.docs[i]||{}).st||0;const note=(d.docs[i]||{}).note||'';return`<span class="dslot s${st}" onclick="cycleDoc(${d.id},${i})" title="${esc(note)||s}">${st===2?'✓ ':st===1?'● ':''}${s}</span>`;}).join('')}
-   ${!((d.docs[1]||{}).st)?'<div class="mut" style="font-size:11px;margin-top:4px">계약서를 등록해 주세요</div>':''}</td></tr>`;}).join('')}</tbody></table>`
+  document.getElementById('docsbody').innerHTML=list.length?`<table><thead><tr><th>거래</th><th>서류 (클릭: 미등록→등록→확정 · 거래 조건에 따라 슬롯 자동 구성)</th></tr></thead><tbody>
+   ${list.map(d=>{d.docs=d.docs||{};const slots=docSlots(d);return`<tr><td style="white-space:nowrap"><b>${esc(d.buyer)}</b><div class="mut" style="font-size:11px">${STAGES[d.stage]}${d.pay==='LC'?' · L/C':''}</div></td>
+   <td>${slots.map(s=>{const st=(d.docs[s]||{}).st||0;const note=(d.docs[s]||{}).note||'';return`<span class="dslot s${st}" onclick="cycleDoc(${d.id},'${s}')" title="${esc(note)||s}">${st===2?'✓ ':st===1?'● ':''}${s}</span>`;}).join('')}
+   ${!((d.docs['계약서']||{}).st)?'<div class="mut" style="font-size:11px;margin-top:4px">계약서를 등록해 주세요</div>':''}</td></tr>`;}).join('')}</tbody></table>
+   <div class="mut" style="font-size:11.5px;margin-top:8px">L/C 거래 → 선적서류 세트·환어음 추가 / 부보(이행 또는 부보율 입력) → 보험증권 추가. 서류 설명은 <span class="dc" onclick="go('docslib')">서류 라이브러리</span> 참조.</div>`
    :emptyBox('📁','진행 중 거래가 없습니다.','신규 거래','openNew()');
 }
 /* 인사이트 */
@@ -1218,14 +1336,15 @@ function partnerModal(name){
   g.classList.add('on');
 }
 /* 설정 드로어 */
-function openSettings(){
+function openSettings(welcome){
   const audit=deals.flatMap(d=>(d.log||[]).map(l=>({t:l.t,b:d.buyer,m:l.msg}))).sort((a,b)=>a.t<b.t?1:-1).slice(0,40);
   document.getElementById('sheet').innerHTML=`
-   <div class="sh"><div><h2 style="margin:0;font-size:18px">설정</h2><div class="mut" style="font-size:12.5px;margin-top:3px">회사 정보는 거래 등록 기본값과 홈 인사말에 사용됩니다.</div></div><button class="x" onclick="closeSheet()">✕</button></div>
+   <div class="sh"><div><h2 style="margin:0;font-size:18px">${welcome?'환영합니다 👋':'설정'}</h2><div class="mut" style="font-size:12.5px;margin-top:3px">${welcome?'이름·회사·주력 품목을 입력하면 아바타·인사말·거래 기본값에 반영됩니다. 나중에 설정에서 언제든 수정할 수 있어요.':'프로필은 거래 등록 기본값·인사말·아바타에 사용됩니다.'}</div></div><button class="x" onclick="closeSheet()">✕</button></div>
    <div class="sb">
-    <h2 style="font-size:15px;margin:0 0 12px">🏢 회사 정보 (수출자 프로필)</h2>
-    <div class="row"><div><label>상호 / 대표자</label><input id="pf_name" value="${esc(PROFILE.name)}" placeholder="예: 청정 수출"></div><div><label>주력 품목 카테고리</label><select id="pf_cat">${opt(['',...CATS],['— 선택 —',...CATS],PROFILE.cat)}</select></div></div>
-    <div class="row"><div><label>연락처 (문안 서명 등에 활용)</label><input id="pf_contact" value="${esc(PROFILE.contact)}" placeholder="이메일·전화"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="PROFILE={name:v('pf_name'),cat:v('pf_cat'),contact:v('pf_contact')};uiSave();render();toast('회사 정보가 저장되었습니다')">저장</button></div></div>
+    <h2 style="font-size:15px;margin:0 0 12px">🏢 수출자 프로필</h2>
+    <div class="row"><div><label>이름</label><input id="pf_name" value="${esc(PROFILE.name)}" placeholder="담당자 이름"></div><div><label>회사명</label><input id="pf_company" value="${esc(PROFILE.company)}" placeholder="상호"></div></div>
+    <div class="row"><div><label>주력 품목 (HS부호 병기 가능)</label><input id="pf_item" value="${esc(PROFILE.item)}" placeholder="예: 화장품(3304), 기계부품(8409), 마른김(1212)"></div><div><label>주력 품목 카테고리</label><select id="pf_cat">${opt(['',...CATS],['— 선택 —',...CATS],PROFILE.cat)}</select></div></div>
+    <div class="row"><div><label>연락처 (문안 서명 등에 활용)</label><input id="pf_contact" value="${esc(PROFILE.contact)}" placeholder="이메일·전화"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="PROFILE={name:v('pf_name'),company:v('pf_company'),item:v('pf_item'),cat:v('pf_cat'),contact:v('pf_contact')};uiSave();render();toast('프로필이 저장되었습니다')">저장</button></div></div>
     <h2 style="font-size:15px;margin:18px 0 10px">⚙ 데이터</h2>
     <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn line sm" onclick="closeSheet();go('data')">데이터 관리 열기</button><button class="btn line sm" onclick="exportJSON()">JSON 내보내기</button></div>
     <h2 style="font-size:15px;margin:0 0 10px">🧾 감사 로그 (전 거래 활동 통합, 최근 40건)</h2>
@@ -1239,6 +1358,7 @@ function palActions(){return[
  {lb:'🛡 위험 진단 열기',h:'액션',run:()=>go('wizard')},
  {lb:'✉ 독촉 문안 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
  {lb:'👥 바이어 검색',h:'이동',run:()=>go('buyers')},
+ {lb:'📚 서류 검색 (서류 라이브러리)',h:'이동',run:()=>go('docslib')},
  {lb:'▤ 거래원장에서 검색',h:'이동',run:()=>go('ledger')},
 ];}
 function openPal(){document.getElementById('pal').classList.add('on');const q=document.getElementById('palq');q.value='';palIdx=0;renderPal();setTimeout(()=>q.focus(),40);}
@@ -1274,7 +1394,8 @@ function formSheet(d){
   document.getElementById('sheet').innerHTML=`
    <div class="sh"><div><h2 style="margin:0;font-size:18px">${d.id?'거래 수정':'신규 거래 등록'}</h2><div class="mut" style="font-size:12.5px;margin-top:3px">입력 시 결제·계약 위험을 자동 진단하고, 단계별 실무 절차를 자동 생성합니다.</div></div><button class="x" onclick="closeSheet()">✕</button></div>
    <div class="sb">
-    <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||'')}" placeholder="예: 냉동 수산물 (0303.89)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||PROFILE.cat||'일반')}</select></div></div>
+    ${d.id?'':`<div class="row"><div><label>이 거래는 지금 어디까지 진행됐나요? (시작점)</label><select id="m_start"><option value="0">상담만 진행</option><option value="1">계약 협의 중</option><option value="2">계약 완료 (결제·생산 준비)</option><option value="4">선적 완료</option><option value="4">대금 회수 대기</option></select></div><div style="display:flex;align-items:flex-end"><span class="mut" style="font-size:12px">선택한 단계부터 할 일이 생성됩니다. 이전 단계 정보는 나중에 입력해도 되며, 미입력 항목은 '미확인'으로 위험 지표에 반영됩니다.</span></div></div>`}
+    <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||(d.id?'':PROFILE.item||''))}" placeholder="예: 화장품(3304), 기계부품(8409), 마른김(1212)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||PROFILE.cat||'일반')}</select></div></div>
     <div class="row"><div><label>바이어명</label><input id="m_buyer" value="${esc(d.buyer||'')}"></div><div><label>수입국</label><input id="m_country" value="${esc(d.country||'')}" placeholder="미국" oninput="renderKsForm()"></div></div>
     <div id="m_ksinfo">${ksureInfoHTML(d.country||'',d.cat||'')}</div>
     <div class="row"><div><label>거래금액 (USD)</label><input id="m_amt" type="number" value="${d.amt||''}"></div><div><label>신용확인 상태 (K-SURE 국외기업 신용조사)</label><select id="m_credit">${opt(['A','B','C','D','NA'],['A (조사 완료·양호)','B (조사 완료·보통)','C (조사 완료·주의)','D (조사 완료·위험)','미확인 (조사 전)'],d.credit||'NA')}</select></div></div>
@@ -1294,8 +1415,13 @@ function saveDeal(){
     if(nd.due&&nd.due!==old.due)nd.tasks.forEach(t=>{const tp=STAGE_TASKS[4].find(p=>p.t===t.title);if(t.stage===4&&tp&&tp.dueOff!==undefined)t.due=addDays(nd.due,tp.dueOff);});
     syncRiskTasks(nd);syncKbTasks(nd);logIt(nd,'거래 수정·재진단');deals[i]=nd;toast('거래가 수정되었습니다');
   }else{
-    nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
-    genStageTasks(nd,0);syncRiskTasks(nd);logIt(nd,'거래 등록');deals.unshift(nd);toast('거래가 등록되었습니다 — 절차가 자동 생성되었습니다');
+    /* 시작점 선택: 선택 단계부터 절차 생성, 이전 단계는 생략 처리 */
+    const st=Math.min(5,Math.max(0,Number(v('m_start'))||0));
+    nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
+    for(let i=0;i<st;i++)nd.genStages.push(i);
+    nd.stage=st;genStageTasks(nd,st);
+    syncRiskTasks(nd);syncKbTasks(nd);logIt(nd,`거래 등록 (시작점: ${STAGES[st]})`);deals.unshift(nd);
+    toast(`거래가 등록되었습니다 — ${STAGES[st]} 단계부터 절차가 생성되었습니다`);
   }
   render();openDetail(nd.id);
 }
@@ -1389,13 +1515,14 @@ function detailTab(d){
       const gen=(d.genStages||[]).includes(si);
       const done=ts.filter(t=>t.done).length;
       const st=si<d.stage?(done===ts.length&&ts.length?'done':'todo'):si===d.stage?'cur':'todo';
-      const stl=si<d.stage?(done===ts.length&&ts.length?'완료':'미완 '+(ts.length-done)):si===d.stage?'진행 중':'예정';
+      const stl=si<d.stage?(!ts.length&&gen?'생략':done===ts.length&&ts.length?'완료':'미완 '+(ts.length-done)):si===d.stage?'진행 중':'예정';
       const open=accOpen===null?si===d.stage:accOpen===si;
       const body=!gen?`<div class="mut" style="font-size:12.5px;padding:4px 2px">이 단계에 진입하면 절차가 자동 생성됩니다.</div>`
+        :!ts.length?`<div class="mut" style="font-size:12.5px;padding:4px 2px">시작점 이전 단계 — 절차 생략(필요 시 아래에서 수동 추가)</div>`
         :TRACKS.map(tr=>{
           const g=ts.filter(t=>t.track===tr);if(!g.length)return'';
           return `<div style="margin:8px 0 4px"><span class="trk"><i style="background:${TRACK_C[tr]}"></i>${tr}</span></div>`+
-            g.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}</div>`).join('');
+            g.map(t=>`<div class="trow ${t.done?'done':''}" ${t.warn?`title="놓치면: ${esc(t.warn)}"`:''}><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)}${taskLink(t)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}</div>`).join('');
         }).join('');
       return `<div class="sacc"><div class="hd" onclick="accOpen=${open?'-1':si};renderDetail(${id})"><span>${si+1}. ${s}</span><span class="st ${st}">${stl}</span><span style="margin-left:auto;color:#98a0b3">${gen?done+'/'+ts.length:''} ${open?'▾':'▸'}</span></div>${open?`<div class="bd">${body}</div>`:''}</div>`;
     }).join('');
@@ -1420,7 +1547,13 @@ function detailTab(d){
   if(curTab==='서류·통관'){
     const docTasks=(d.tasks||[]).filter(t=>(t.track==='서류'||t.track==='물류·통관')&&t.stage<=d.stage);
     const kbs=kbRules(d);
-    return `<label>통관·원산지</label><div style="margin-bottom:8px"><span class="pill">${d.newmkt?'⚠ 신규 수입국 — 검역·라벨 사전 확인':'기존 수입국'}</span>${d.cat&&CATREC[d.cat]?`<span class="pill">${d.cat} 유의</span>`:''}</div>
+    const ldn=d.loadDue?dday(d.loadDue):null;
+    return `<label>수출신고·적재 기한 (관세청 절차 — 판단·신고 대행이 아닌 정보·기한 관리)</label>
+      <div class="ksbox"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+       <span style="font-size:12.5px">수출신고 <b>수리일</b>:</span><input type="date" style="width:auto" value="${d.clearedAt||''}" onchange="setCleared(${d.id},this.value)">
+       ${d.loadDue?`<span style="font-size:12.5px">→ 적재 기한 <b>${d.loadDue}</b> ${ldn<0?`<span class="dd over">경과 D+${-ldn}</span>`:ldn<=7?`<span class="dd soon">D-${ldn}</span>`:`<span class="dd ok">D-${ldn}</span>`}</span>`:'<span class="mut" style="font-size:12px">수리일 입력 시 적재 기한(+30일, 연장 가능)이 D-day로 등록됩니다</span>'}
+      </div><div class="mut" style="font-size:11px;margin-top:5px">근거: 수출신고 수리일로부터 30일 이내 적재 (기한 경과 시 신고 취하·과태료 위험 — 일반 안내이며 구체 판단은 관세사·세관). <a href="https://unipass.customs.go.kr" target="_blank" rel="noopener" style="text-decoration:underline">유니패스 ↗</a></div></div>
+      <label>통관·원산지</label><div style="margin-bottom:8px"><span class="pill">${d.newmkt?'⚠ 신규 수입국 — 검역·라벨 사전 확인':'기존 수입국'}</span>${d.cat&&CATREC[d.cat]?`<span class="pill">${d.cat} 유의</span>`:''}</div>
       ${d.cat&&CATREC[d.cat]?`<div class="mut" style="font-size:12.5px;margin-bottom:12px">${CATREC[d.cat].replace(/<[^>]+>/g,'')}</div>`:''}
       ${kbs.length?`<label>이 거래에 적용되는 품목×수입국 규칙 (${kbs.length})</label><div style="margin-bottom:12px">${kbs.map(r=>`<div class="rec" style="border-top:1px dashed var(--line);padding:8px 0"><span>📋</span><div>${esc(r.note)}${r.task?` <span class="pill">→ ${STAGES[r.task.st]} 단계 할 일 자동 생성</span>`:''}</div></div>`).join('')}</div>`:''}
       ${docTasks.length?`<label>서류·물류 할 일</label>${docTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}<span class="pill">${STAGES[t.stage]}</span></div>`).join('')}`:'<div class="mut" style="font-size:13px">아직 생성된 서류·물류 절차가 없습니다.</div>'}
@@ -1434,6 +1567,17 @@ function detailTab(d){
 function saveNotes(id){const d=deals.find(x=>x.id===id);d.notes=document.getElementById('d_notes').value;save();}
 function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];d.fraud[i]=!d.fraud[i];logIt(d,(d.fraud[i]?'사기 신호 체크: ':'사기 신호 해제: ')+FRAUD_CHECKS[i].slice(0,30));save();renderDetail(id);}
 function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
+/* 수출신고 수리일 → 적재 기한(+30일) D-day 태스크 등록 */
+function setCleared(id,val){
+  const d=deals.find(x=>x.id===id);if(!val)return;
+  d.clearedAt=val;d.loadDue=addDays(val,30);
+  const title='적재 기한 — 수출신고 수리일+30일 이내 적재 (연장 가능)';
+  let t=(d.tasks||[]).find(x=>x.title===title);
+  if(t)t.due=d.loadDue;
+  else d.tasks.push(newTask(d,{title,track:'물류·통관',stage:3,req:true,due:d.loadDue,src:'customs',link:'https://unipass.customs.go.kr',warn:'기한 경과 시 신고 취하·과태료 위험(일반 안내)'}));
+  logIt(d,`수출신고 수리일 ${val} 입력 — 적재 기한 ${d.loadDue} D-day 등록`);
+  save();render();renderDetail(id);
+}
 function setSim(id,k,val){const d=deals.find(x=>x.id===id);d.sim=d.sim||{adv:0,cover:'',splits:1};d.sim[k]=val===''?'':Math.max(0,Math.min(100,Number(val)||0));save();renderDetail(id);}
 function copyDun(id,stage,lang){const d=deals.find(x=>x.id===id);const t=dunText(stage,d)[lang];copyText(t);logIt(d,`회수 문안 복사 (${stage}·${lang==='kr'?'국문':'영문'})`);save();toast('문안이 복사되었습니다 — 발송은 직접 진행하세요');}
 function delDeal(id){if(confirm('이 거래를 삭제할까요?')){deals=deals.filter(x=>x.id!==id);closeSheet();render();toast('삭제되었습니다');}}
@@ -1488,7 +1632,7 @@ function importCSV(inp){
 function openSheet(){document.getElementById('mask').classList.add('on');}
 function closeSheet(){document.getElementById('mask').classList.remove('on');}
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
-const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','calendar','insights','ksure','partners'];
+const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','docslib','calendar','insights','ksure','partners'];
 function go(v){VIEWS.forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
 document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.v)go(a.dataset.v);else if(a.dataset.act==='settings')openSettings();});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
@@ -1501,11 +1645,9 @@ function exportJSON(){const b=new Blob([JSON.stringify(deals,null,2)],{type:'app
 function seedData(){
   const t=new Date(),fmt=o=>{const x=new Date(t);x.setDate(x.getDate()+o);return x.toISOString().slice(0,10);};
   [['마른김 (1212.21)','수산식품','Pacific Nori LLC','미국',80000,'NA','OA','',false,true,4,fmt(-3),0.9],
-   ['조미김 (2008.99)','수산식품','Gulf Trading Co.','UAE',35000,'C','TT_A','CIF',false,true,2,fmt(5),0.5],
    ['기초 화장품 세트 (3304.99)','화장품','LA Beauty Dist.','미국',48000,'C','TT_A','',false,true,2,fmt(12),0.3],
    ['자동차 부품 (8708.99)','기계·부품','Hanoi Auto Parts','베트남',120000,'B','DA','FOB',false,false,3,fmt(18),0.7],
-   ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'A','LC','CFR',true,false,3,fmt(30),0.85],
-   ['마른김 (1212.21)','수산식품','Berlin Asia Import','독일',22000,'B','TT_P','DAP',true,true,1,fmt(44),0.4]]
+   ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'A','LC','CFR',true,false,1,fmt(30),0.85]]
   .forEach(a=>{
     const d={id:seq++,item:a[0],cat:a[1],buyer:a[2],country:a[3],amt:a[4],credit:a[5],pay:a[6],inco:a[7],insp:a[8],newmkt:a[9],due:a[11]};
     const r=assess(d);d.score=r.score;d.level=r.level;d.recs=r.recs;
@@ -1520,6 +1662,8 @@ function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)�
 uiLoad();ksureLoad();
 load();if(!deals.length)seedData();
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
+/* 구버전 서류함(숫자 키) → 이름 키 마이그레이션 */
+deals.forEach(d=>{if(d.docs&&d.docs[0]!==undefined){const old=['P/I','계약서','B/L·AWB','C/O','보험증권'];const nd={};Object.keys(d.docs).forEach(k=>{if(/^\d+$/.test(k)&&old[k])nd[old[k]]=d.docs[k];else if(!/^\d+$/.test(k))nd[k]=d.docs[k];});d.docs=nd;}});
 selfTest(); /* 회귀 테스트 — 결과는 [데이터 관리] 뷰와 콘솔에 표시 */
 render();
 
@@ -1548,6 +1692,8 @@ render();
 })();
 /* 저장 불가 환경 안내 (아티팩트 등) */
 setTimeout(()=>{if(!_persist)toast('이 환경에서는 브라우저 저장이 제한됩니다 — 새로고침 시 데이터가 초기화될 수 있습니다');},900);
+/* 최초 접속 온보딩: 프로필 미설정 시 1회 안내 */
+if(!PROFILE.name&&!GUIDE.onboard){GUIDE.onboard=true;uiSave();setTimeout(()=>openSettings(true),500);}
 </script>
 </body>
 </html>
