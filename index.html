@@ -127,6 +127,71 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 .links a:hover{background:#f7f9fc;}
 .mut{color:var(--mut);}.hide{display:none;}
 .ksbox{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:11px 13px;font-size:12.5px;line-height:1.7;margin:6px 0 12px;}
+/* ===== UI 개편 (flex 벤치마킹) ===== */
+.home3{display:grid;grid-template-columns:1fr 296px;gap:16px;align-items:start;}
+.guide{display:flex;flex-direction:column;gap:7px;}
+.gstep{display:flex;align-items:center;gap:11px;padding:10px 13px;border:1px solid var(--line);border-radius:11px;background:#fff;}
+.gstep .num{width:22px;height:22px;border-radius:50%;background:#eef1f7;color:#667;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gstep.done .num{background:var(--green-l);color:var(--green);}
+.gstep .gt{flex:1;font-size:13px;font-weight:600;}
+.gstep.done .gt{opacity:.55;text-decoration:line-through;}
+.guidew{margin:14px 8px 0;padding:10px 12px;background:var(--pri-l);border-radius:10px;font-size:12px;font-weight:700;color:var(--pri-d);cursor:pointer;display:flex;justify-content:space-between;}
+.warnbar{background:var(--amber-l);border:1px solid #eddcb0;color:#7a5510;border-radius:10px;padding:10px 13px;font-size:12.5px;margin-bottom:12px;line-height:1.6;}
+/* command palette */
+.pmask{position:fixed;inset:0;background:rgba(20,28,50,.45);display:none;justify-content:center;align-items:flex-start;padding-top:14vh;z-index:90;}
+.pmask.on{display:flex;}
+.pbox{background:#fff;border-radius:14px;width:560px;max-width:92%;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden;}
+.pbox input{border:0;border-bottom:1px solid var(--line);border-radius:0;padding:15px 18px;font-size:15px;}
+.pbox input:focus{outline:none;}
+.pout{max-height:320px;overflow:auto;padding:6px;}
+.pitem{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:9px;font-size:13.5px;cursor:pointer;font-weight:600;}
+.pitem .ph{color:var(--mut);font-weight:400;font-size:12px;margin-left:auto;}
+.pitem.sel{background:var(--pri-l);color:var(--pri-d);}
+/* wizard */
+.wiz3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:16px 0;}
+.wcard{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:8px;}
+.wcard .wi{font-size:22px;}
+.wcard .wt{font-weight:800;font-size:14px;}
+.wcard .wd{font-size:12.5px;color:var(--mut);flex:1;line-height:1.6;}
+.cta{display:block;width:100%;border:0;border-radius:13px;padding:16px;font-size:15px;font-weight:800;color:#fff;cursor:pointer;background:linear-gradient(90deg,#2b4a9b,#5a7bd8);box-shadow:0 6px 18px rgba(43,74,155,.3);}
+.cta:hover{filter:brightness(1.06);}
+/* buyers split */
+.split{display:grid;grid-template-columns:280px 1fr;gap:16px;align-items:start;}
+.blist .bi{padding:11px 13px;border:1px solid var(--line);border-radius:11px;margin-bottom:7px;cursor:pointer;background:#fff;}
+.blist .bi:hover{border-color:#c8d2e8;}
+.blist .bi.sel{border-color:var(--pri);background:var(--pri-l);}
+.blist .bi .bn{font-weight:800;font-size:13.5px;}
+.blist .bi .bm{font-size:11.5px;color:var(--mut);margin-top:2px;}
+/* doc slots */
+.dslot{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:8px;padding:4px 10px;font-size:12px;font-weight:700;cursor:pointer;margin:2px 4px 2px 0;background:#fff;color:#889;}
+.dslot.s1{background:var(--pri-l);color:var(--pri-d);border-color:#c8d2e8;}
+.dslot.s2{background:var(--green-l);color:var(--green);border-color:#bfe2cd;}
+/* calendar */
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal .ch{text-align:center;font-size:11px;color:var(--mut);font-weight:700;padding:4px 0;}
+.cal .cd{min-height:64px;border:1px solid var(--line);border-radius:9px;padding:5px 6px;font-size:11px;background:#fff;}
+.cal .cd.out{opacity:.35;}
+.cal .cd.today{border-color:var(--pri);box-shadow:0 0 0 1px var(--pri) inset;}
+.cal .cd .dn{font-weight:700;color:#667;}
+.cal .ev{display:block;margin-top:3px;border-radius:5px;padding:2px 5px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:var(--pri-l);color:var(--pri-d);}
+.cal .ev.over{background:var(--red-l);color:var(--red);}
+.cal .ev.soon{background:var(--amber-l);color:var(--amber);}
+.minical{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;font-size:11px;text-align:center;}
+.minical .md{padding:5px 0;border-radius:7px;position:relative;}
+.minical .md.today{background:var(--pri);color:#fff;font-weight:800;}
+.minical .md .dot{position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--amber);}
+.minical .md .dot.over{background:var(--red);}
+/* funnel */
+.funnel{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.fstep{flex:1;min-width:110px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--shadow);}
+.fstep .fn{font-size:22px;font-weight:800;color:var(--pri-d);}
+.fstep .fl{font-size:11.5px;color:var(--mut);font-weight:700;margin-top:2px;}
+.metric4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.togg{position:relative;width:34px;height:19px;border-radius:12px;background:#d5dae6;cursor:pointer;flex-shrink:0;transition:.15s;}
+.togg.on{background:var(--green);}
+.togg::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.15s;}
+.togg.on::after{left:17px;}
+@media (max-width:1100px){.home3{grid-template-columns:1fr;}.wiz3{grid-template-columns:1fr;}.metric4{grid-template-columns:repeat(2,1fr);}.split{grid-template-columns:1fr;}}
 .pill{display:inline-block;font-size:11px;background:#eef1f7;color:#556;border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;}
 .empty{text-align:center;color:var(--mut);padding:26px;font-size:13.5px;}
 /* stage accordion in detail */
@@ -163,7 +228,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 <body>
 <div class="top">
   <div class="brand"><span class="dot"></span>ExportOS</div>
-  <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색" oninput="globalSearch()"></div>
+  <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
   <button class="btn" onclick="openNew()">＋ 신규 거래</button>
   <div class="avatar">김</div>
@@ -171,25 +236,100 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 <div class="wrap">
   <aside class="side">
     <div class="grp">업무</div>
-    <a data-v="dash" class="active"><span class="i">▦</span> 대시보드</a>
-    <a data-v="tasks"><span class="i">☑</span> 내 할 일 <span class="nb hide" id="taskbadge"></span></a>
+    <a data-v="dash" class="active"><span class="i">▦</span> 홈 피드</a>
+    <a data-v="tasks"><span class="i">☑</span> 할 일 <span class="nb hide" id="taskbadge"></span></a>
     <a data-v="board"><span class="i">🗂</span> 거래 파이프라인</a>
     <a data-v="ledger"><span class="i">▤</span> 거래원장</a>
-    <div class="grp">지원</div>
-    <a data-v="res"><span class="i">🔗</span> 자료·연결</a>
+    <div class="grp">바이어</div>
+    <a data-v="buyers"><span class="i">👥</span> 바이어</a>
+    <a data-v="credit"><span class="i">🔎</span> 신용조사 현황</a>
+    <div class="grp">리스크</div>
+    <a data-v="wizard"><span class="i">🛡</span> 위험 진단</a>
+    <a data-v="rules"><span class="i">📚</span> 리스크 규칙</a>
+    <a data-v="policy"><span class="i">📏</span> 거래 정책</a>
+    <div class="grp">서류·일정</div>
+    <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
+    <a data-v="calendar"><span class="i">📅</span> 회수 캘린더</a>
+    <div class="grp">인사이트</div>
+    <a data-v="insights"><span class="i">📈</span> 인사이트</a>
+    <div class="grp">연결·지원</div>
+    <a data-v="ksure"><span class="i">🛟</span> 수출보험 (K-SURE)</a>
+    <a data-v="partners"><span class="i">🤝</span> 무역 파트너스</a>
+    <a data-v="res"><span class="i">🔗</span> 자료·가이드</a>
+    <div class="grp">관리</div>
     <a data-v="data"><span class="i">⚙</span> 데이터 관리</a>
-    <div class="foot">정보 제공·리스크 진단·권유·연결 서비스입니다. 계약 확정·서류심사·보험 인수·대금 회수 집행은 변호사·관세사·은행·K-SURE가 담당합니다. 데이터는 이 브라우저에 저장됩니다.<br><br><span style="cursor:pointer;text-decoration:underline" onclick="resetAll()">데이터 초기화</span></div>
+    <a data-act="settings"><span class="i">🛠</span> 설정</a>
+    <div class="guidew" id="guidew" onclick="go('dash')"><span>🚀 시작 가이드</span><b id="guideCnt">0/4</b></div>
+    <div class="foot">정보 제공·리스크 진단·권유·연결 서비스입니다. 확정·집행은 변호사·관세사·은행·K-SURE가 담당합니다. 데이터는 이 브라우저에 저장됩니다.<br><br><span style="cursor:pointer;text-decoration:underline" onclick="resetAll()">데이터 초기화</span></div>
   </aside>
   <main class="main">
-    <!-- DASHBOARD -->
+    <!-- HOME FEED (3열: 사이드바 · 중앙 · 우측 위젯) -->
     <section id="v-dash">
-      <div class="panel hero" id="today"></div>
-      <div class="kpis" id="kpis"></div>
-      <div class="grid2">
-        <div class="panel"><h2>⏰ 회수 임박·지연 (우선 조치)</h2><div id="duelist"></div></div>
-        <div class="panel"><h2>단계별 거래 분포</h2><div id="stagechart"></div></div>
+      <div class="home3">
+        <div>
+          <div class="panel" id="guidecard"></div>
+          <div class="panel hero" id="today"></div>
+          <div class="kpis" id="kpis"></div>
+          <div class="panel"><h2>⏰ 회수 임박·지연 (우선 조치)</h2><div id="duelist"></div></div>
+          <div class="panel"><h2>🕘 최근 활동</h2><div id="recentact"></div></div>
+        </div>
+        <div>
+          <div class="panel"><h2>📅 만기 캘린더 <span class="pill" style="cursor:pointer" onclick="go('calendar')">전체 보기</span></h2><div id="minical"></div></div>
+          <div class="panel"><h2>🔔 알림</h2><div id="notif"></div></div>
+          <div class="panel"><h2>🔗 전문기관 연결</h2><div class="links" id="quicklinks"></div></div>
+        </div>
       </div>
-      <div class="panel"><h2>🔴 고위험 거래</h2><div id="highlist"></div></div>
+    </section>
+    <!-- BUYERS -->
+    <section id="v-buyers" class="hide">
+      <div class="phead"><div><h1>바이어</h1><div class="d">거래에서 분리된 바이어 단위 화면입니다. 내부 이력은 당사 원장 기준의 결정론 집계입니다.</div></div></div>
+      <div class="split"><div class="panel"><input type="search" id="bq" placeholder="바이어 검색" oninput="renderBuyers()" style="margin-bottom:10px"><div class="blist" id="blist"></div></div>
+      <div class="panel" id="bdetail"></div></div>
+    </section>
+    <!-- CREDIT STATUS -->
+    <section id="v-credit" class="hide">
+      <div class="phead"><div><h1>신용조사 현황</h1><div class="d">K-SURE 국외기업 신용조사 신청 상태를 바이어별로 추적합니다. 앱이 신용을 추측하지 않습니다.</div></div></div>
+      <div class="panel" id="creditlist"></div>
+    </section>
+    <!-- RISK WIZARD -->
+    <section id="v-wizard" class="hide">
+      <div class="phead"><div><h1>위험 진단</h1><div class="d">이 거래, 안전하게 진행할 준비가 되었나요?</div></div></div>
+      <div class="panel" id="wizbody"></div>
+    </section>
+    <!-- RISK RULES -->
+    <section id="v-rules" class="hide">
+      <div class="phead"><div><h1>리스크 규칙</h1><div class="d">진단에 사용되는 규칙 라이브러리입니다. 미사용으로 바꾸면 해당 규칙은 진단에서 제외됩니다.</div></div></div>
+      <div class="panel" id="rulesbody"></div>
+    </section>
+    <!-- POLICY -->
+    <section id="v-policy" class="hide">
+      <div class="phead"><div><h1>거래 정책</h1><div class="d">회사 차원의 거래 기준입니다. 위반이 감지되면 거래 상세에 경고가 표시됩니다.</div></div></div>
+      <div class="panel" id="policybody"></div>
+    </section>
+    <!-- DOCS -->
+    <section id="v-docs" class="hide">
+      <div class="phead"><div><h1>거래 서류함</h1><div class="d">거래별 필수 서류 상태를 기록합니다. 클릭: 미등록 → 등록 → 확정. (파일 자체 저장은 브라우저 저장 한계로 지원 범위 외 — 이름·메모만 기록)</div></div></div>
+      <div class="panel" id="docsbody"></div>
+    </section>
+    <!-- CALENDAR -->
+    <section id="v-calendar" class="hide">
+      <div class="phead"><div><h1>회수 캘린더</h1><div class="d">결제 만기를 월간으로 봅니다. 지연=빨강, 7일 내=주황.</div></div></div>
+      <div class="panel" id="calbody"></div>
+    </section>
+    <!-- INSIGHTS -->
+    <section id="v-insights" class="hide">
+      <div class="phead"><div><h1>인사이트</h1><div class="d">원장 데이터의 결정론 집계입니다. 추정·예측치가 아닙니다.</div></div></div>
+      <div id="insightsbody"></div>
+    </section>
+    <!-- KSURE PAGE -->
+    <section id="v-ksure" class="hide">
+      <div class="phead"><div><h1>수출보험 (K-SURE)</h1><div class="d">소개·권유·연결까지만 제공합니다. 보험료·요율은 상담으로 확인하세요.</div></div></div>
+      <div id="ksurebody"></div>
+    </section>
+    <!-- PARTNERS -->
+    <section id="v-partners" class="hide">
+      <div class="phead"><div><h1>무역 파트너스</h1><div class="d">확정·집행이 필요한 업무를 전문가와 연결합니다.</div></div></div>
+      <div id="partnersbody"></div>
     </section>
     <!-- TASKS -->
     <section id="v-tasks" class="hide">
@@ -265,6 +405,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 </div>
 <div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
 <div class="gmask" id="gate"></div>
+<div class="pmask" id="pal"><div class="pbox"><input id="palq" placeholder="명령 또는 거래·바이어 검색  (↑↓ 이동 · Enter 실행 · Esc 닫기)" oninput="renderPal()" onkeydown="palKey(event)"><div class="pout" id="palout"></div></div></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -323,7 +464,8 @@ function ctryMatch(dc,c){if(c==='EU')return EU_COUNTRIES.some(e=>dc.includes(e))
 function hsOf(s){const m=String(s).match(/\d{4}(\.\d{2,4})?/);return m?m[0].replace(/\./g,''):'';}
 function kbRules(d){
   const dhs=hsOf(d.item||'');
-  return KB_RULES.filter(r=>
+  return KB_RULES.filter((r,i)=>
+    (typeof ruleOn!=='function'||ruleOn('kb'+i))&&
     (!r.cats||r.cats.includes(d.cat))&&
     (!r.hs||(dhs&&dhs.startsWith(r.hs.replace(/\./g,''))))&&
     (!r.countries||r.countries.some(c=>ctryMatch(d.country||'',c))));
@@ -453,6 +595,7 @@ function dunText(stage,d){
 /* 회귀 테스트 (지시서 4-1 정답표) — 부팅 시 실행 */
 function selfTest(){
   const T=[];const ok=(name,cond,got)=>T.push({name,pass:!!cond,got});
+  const savedOff=RULES_OFF;RULES_OFF=[]; /* 테스트는 전 규칙 사용 상태 기준 */
   let a=assess({pay:'OA',credit:'NA',amt:80000,insp:false,inco:'',cat:'일반'});ok('T1 O/A·미확인·$80k·조항무·인코무 → 84 고위험',a.score===84&&a.level==='HIGH',a.score+' '+a.level);
   a=assess({pay:'LC',credit:'A',amt:60000,insp:true,inco:'FOB',cat:'일반'});ok('T2 L/C·A·$60k·조항유·FOB → 13 양호',a.score===13&&a.level==='LOW',a.score+' '+a.level);
   a=assess({pay:'TT_A',credit:'C',amt:35000,insp:false,inco:'CIF',cat:'일반'});ok('T3 사후T/T·C·$35k·조항무·CIF → 70 고위험',a.score===70&&a.level==='HIGH',a.score+' '+a.level);
@@ -463,6 +606,7 @@ function selfTest(){
   const empty={meta:{dataVersion:null},countryRatings:[],oecdGrades:[],riskIndex:[]};
   ok('T8 K-SURE 미탑재 시 조회 null(미탑재 표시)',ksureLookup('미국',empty)===null,String(ksureLookup('미국',empty)));
   ok('T9 만기 D+3 경과 → 정중 독촉(D+3) 문안 단계',currentDun(-3)==='D+3'&&!!dunText('D+3',{buyer:'X',amt:1,due:'2026-01-01'}),currentDun(-3));
+  RULES_OFF=savedOff;
   window._qa=T;
   const fail=T.filter(x=>!x.pass);
   console[fail.length?'error':'log']('[ExportOS QA] '+(T.length-fail.length)+'/'+T.length+' 통과',T);
@@ -470,6 +614,59 @@ function selfTest(){
 }
 
 let deals=[],seq=1,dragId=null,editId=null,curTab='개요',accOpen=null;
+
+/* ===== UI 개편 상태 (설정·정책·가이드·규칙 토글·바이어 메타) ===== */
+let PROFILE={name:'',cat:'',contact:''};              /* 회사 정보 (수출자 프로필) */
+let POLICY={nolimit:50000,advmin:30,remind:7};        /* 거래 정책 기본값 (수정 가능) */
+let GUIDE={diag:false,collapsed:false};               /* 시작 가이드 진행 */
+let RULES_OFF=[];                                     /* 미사용 규칙 id 목록 */
+let BUYER_META={};                                    /* 바이어별 신용조사 신청 상태 {이름:{req}} */
+let curBuyer=null,calOff=0,palIdx=0;
+function uiLoad(){try{PROFILE=Object.assign(PROFILE,JSON.parse(sGet('exportos_profile_v1'))||{});}catch(e){}
+ try{POLICY=Object.assign(POLICY,JSON.parse(sGet('exportos_policy_v1'))||{});}catch(e){}
+ try{GUIDE=Object.assign(GUIDE,JSON.parse(sGet('exportos_guide_v1'))||{});}catch(e){}
+ try{RULES_OFF=JSON.parse(sGet('exportos_rulesoff_v1'))||[];}catch(e){}
+ try{BUYER_META=JSON.parse(sGet('exportos_buyermeta_v1'))||{};}catch(e){}}
+function uiSave(){sSet('exportos_profile_v1',JSON.stringify(PROFILE));sSet('exportos_policy_v1',JSON.stringify(POLICY));sSet('exportos_guide_v1',JSON.stringify(GUIDE));sSet('exportos_rulesoff_v1',JSON.stringify(RULES_OFF));sSet('exportos_buyermeta_v1',JSON.stringify(BUYER_META));}
+const ruleOn=id=>!RULES_OFF.includes(id);
+function toggleRule(id){const i=RULES_OFF.indexOf(id);if(i>=0)RULES_OFF.splice(i,1);else RULES_OFF.push(id);uiSave();
+ deals.forEach(d=>{const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);syncKbTasks(d);});render();}
+/* 진단 규칙 레지스트리 (시각화·토글용) — 출처·기준일 필수 */
+const CORE_RULES=[
+ {id:'pay',name:'결제방식 기본 위험',desc:'O/A +40 · 사후T/T +35 · D/A +25 · D/P +15 · L/C +5 · 선수금 0',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'credit',name:'신용확인 상태 가산',desc:'D +35 · C +25 · 미확인 +20 · B +8 · A 0',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'amt',name:'거래금액 가산',desc:'$100,000 이상 +15 · $50,000 이상 +8',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'insp',name:'검사조항·클레임 기한 미설정',desc:'계약에 검사·클레임 기한이 없으면 +10',cat:'계약',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'inco',name:'인코텀즈 미선택',desc:'위험·비용 분기점 미확정 시 +6',cat:'계약',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'fraud',name:'무역사기 패턴 대조',desc:'사기 의심 신호 체크리스트 ('+FRAUD_CHECKS.length+'문항)',cat:'사기',src:'KOTRA 무역사기 유형 기반'},
+];
+/* 거래 정책 위반 감지 (결정론) */
+function policyViolations(d){
+  const out=[];const noG=['OA','TT_A','DA'].includes(d.pay);
+  if(noG&&(d.amt||0)>POLICY.nolimit)out.push(`무담보 거래 한도 초과 — 이 거래 $${(d.amt||0).toLocaleString()} > 한도 $${Number(POLICY.nolimit).toLocaleString()}`);
+  const adv=(d.sim&&Number(d.sim.adv))||0;
+  if(!buyerHistory(d)&&adv<POLICY.advmin)out.push(`신규 바이어 선수금 ${POLICY.advmin}% 미만 — 현재 ${adv}% (회수 시뮬레이터에서 선수금 입력)`);
+  return out;
+}
+/* 시작 가이드 상태 (완료는 실제 데이터로 판정) */
+function guideSteps(){return[
+ {lb:'회사정보 입력',done:!!PROFILE.name,act:'openSettings()'},
+ {lb:'K-SURE 데이터 탑재',done:!!KSURE_DATA.meta.dataVersion,act:"go('data')"},
+ {lb:'첫 거래 등록',done:deals.length>0,act:'openNew()'},
+ {lb:'위험 진단 실행',done:GUIDE.diag,act:"go('wizard')"},
+];}
+/* 바이어 엔티티 (원장에서 파생) */
+function buyerList(){
+  const map={};
+  deals.forEach(d=>{const k=String(d.buyer).trim();if(!k)return;
+    if(!map[k])map[k]={name:k,deals:[]};map[k].deals.push(d);});
+  return Object.values(map).map(b=>{
+    const last=b.deals[0];
+    const late=b.deals.filter(x=>(x.tasks||[]).some(t=>t.title.includes('대금 미회수'))).length;
+    return{name:b.name,country:last.country,cat:last.cat,credit:last.credit,deals:b.deals,late,done:b.deals.filter(x=>x.stage===5).length,req:(BUYER_META[b.name]||{}).req||'none'};
+  }).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function setBuyerReq(name,val){BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].req=val;uiSave();render();}
 
 function load(){try{const s=JSON.parse(sGet(KEY));if(s){deals=s.deals||[];seq=s.seq||1;}}catch(e){}}
 function save(){sSet(KEY,JSON.stringify({deals,seq}));}
@@ -485,13 +682,14 @@ function tdd(t){if(!t.due)return'';const n=dday(t.due);return n<0?`<span class="
 /* ---------- 위험 진단 규칙 엔진 ---------- */
 function assess(d){
   let s=0;const recs=[];const parts=[];
-  const p1={OA:40,TT_A:35,DA:25,DP:15,LC:5,TT_P:0}[d.pay]||0;s+=p1;parts.push({k:'결제방식 — '+(PAY[d.pay]||d.pay),v:p1});
+  const off=id=>ruleOn(id)?'':' (규칙 미사용 — 제외)';
+  const p1=ruleOn('pay')?({OA:40,TT_A:35,DA:25,DP:15,LC:5,TT_P:0}[d.pay]||0):0;s+=p1;parts.push({k:'결제방식 — '+(PAY[d.pay]||d.pay)+off('pay'),v:p1});
   const noG=['OA','TT_A','DA'].includes(d.pay),cR=['C','D','NA'].includes(d.credit);
-  const p2=d.credit==='D'?35:d.credit==='C'?25:d.credit==='NA'?20:d.credit==='B'?8:0;s+=p2;
-  parts.push({k:'신용확인 상태 — '+(d.credit==='NA'?'미확인(조사 전)':'K-SURE 조사 결과 '+d.credit),v:p2});
-  const p3=d.amt>=100000?15:d.amt>=50000?8:0;s+=p3;parts.push({k:'거래금액 — $'+(d.amt||0).toLocaleString(),v:p3});
-  const p4=d.insp?0:10;s+=p4;parts.push({k:'검사조항·클레임 기한 — '+(d.insp?'명시':'미설정'),v:p4});
-  const p5=d.inco?0:6;s+=p5;parts.push({k:'인코텀즈 — '+(d.inco||'미선택'),v:p5});
+  const p2=ruleOn('credit')?(d.credit==='D'?35:d.credit==='C'?25:d.credit==='NA'?20:d.credit==='B'?8:0):0;s+=p2;
+  parts.push({k:'신용확인 상태 — '+(d.credit==='NA'?'미확인(조사 전)':'K-SURE 조사 결과 '+d.credit)+off('credit'),v:p2});
+  const p3=ruleOn('amt')?(d.amt>=100000?15:d.amt>=50000?8:0):0;s+=p3;parts.push({k:'거래금액 — $'+(d.amt||0).toLocaleString()+off('amt'),v:p3});
+  const p4=ruleOn('insp')?(d.insp?0:10):0;s+=p4;parts.push({k:'검사조항·클레임 기한 — '+(d.insp?'명시':'미설정')+off('insp'),v:p4});
+  const p5=ruleOn('inco')?(d.inco?0:6):0;s+=p5;parts.push({k:'인코텀즈 — '+(d.inco||'미선택')+off('inco'),v:p5});
   s=Math.min(100,s);
   if(noG&&cR)recs.push('<b>[결제]</b> 미회수 위험 높음 → 선수금 30~50% 확보 또는 K-SURE 단기수출보험 부보, 가능 시 신용장 전환');
   else if(noG)recs.push('<b>[결제]</b> 무담보 거래 → K-SURE 단기수출보험 부보 검토');
@@ -609,6 +807,7 @@ function doStage(d,target){
   for(let i=0;i<=target;i++)genStageTasks(d,i);
   logIt(d,`단계 이동: ${STAGES[d.stage]} → ${STAGES[target]}`);
   d.stage=target;
+  if(target===5&&!d.doneAt)d.doneAt=iso(); /* 완료일 기록 (인사이트 평균 회수 소요 계산용) */
   toast(`${d.buyer} → ${STAGES[target]}`);
   render();
   if(document.getElementById('mask').classList.contains('on')&&editId===d.id)renderDetail(d.id);
@@ -643,7 +842,7 @@ function taskStats(){
 }
 
 /* ---------- 렌더 ---------- */
-function render(){autoFollowup();renderToday();renderKpis();renderDue();renderStageChart();renderHigh();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBadge();save();}
+function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderCal();renderInsights();renderKsurePage();renderPartners();renderBadge();save();}
 function renderBadge(){
   const s=taskStats();const n=s.over.length+s.today.length;
   const b=document.getElementById('taskbadge');
@@ -662,7 +861,7 @@ function renderToday(){
   const total=rows.reduce((a,r)=>a+r[2],0);
   const hr=new Date().getHours();const gr=hr<11?'좋은 아침입니다':hr<18?'안녕하세요':'수고 많으셨습니다';
   window._heroActs=rows.map(r=>r[3]);
-  document.getElementById('today').innerHTML=`<div class="hi">👋 김 대표님, ${gr}</div>
+  document.getElementById('today').innerHTML=`<div class="hi">👋 ${PROFILE.name?esc(PROFILE.name):'대표'}님, ${gr}</div>
     <div class="hs">오늘 확인이 필요한 업무 <b style="color:var(--pri-d)">${total}건</b>${total?' — 아래에서 바로 처리하세요.':''}</div>
     ${rows.length?`<div class="todo">${rows.map((r,i)=>`<div class="ti" onclick="_heroActs[${i}]()"><span class="ic">${r[0]}</span><span class="tx">${r[1]}</span><span class="cn">${r[2]}건</span><span class="ar">→</span></div>`).join('')}</div>`:`<div class="mut" style="margin-top:10px">지금 급히 처리할 업무가 없습니다. 👍</div>`}`;
 }
@@ -674,11 +873,6 @@ function renderKpis(){
   window._kpiActs=[()=>go('ledger'),()=>{document.getElementById('fLevel').value='HIGH';go('ledger');renderLedger();},()=>go('dash'),goTasks];
   document.getElementById('kpis').innerHTML=[['전체 거래','▦',t,''],['고위험 (진행중)','⚠',h,'a'],['회수 임박·지연','⏰',due,'a'],['열린 할 일','☑',s.open.length,'']]
    .map(([l,i,n,c],ix)=>`<div class="kpi ${c}" onclick="_kpiActs[${ix}]()"><div class="l">${i} ${l}</div><div class="n">${n}</div></div>`).join('');
-}
-function renderStageChart(){
-  const max=Math.max(1,...STAGES.map((_,i)=>deals.filter(d=>d.stage===i).length));
-  document.getElementById('stagechart').innerHTML=STAGES.map((s,i)=>{const c=deals.filter(d=>d.stage===i).length;
-    return `<div class="bar"><span class="lb">${s}</span><span class="tr"><span class="fl" style="width:${c/max*100}%"></span></span><span class="vv">${c}</span></div>`;}).join('');
 }
 function renderBoard(){
   document.getElementById('board').innerHTML=STAGES.map((s,ci)=>{
@@ -698,7 +892,6 @@ function renderDue(){
   document.getElementById('duelist').innerHTML=list.length?('<table><thead><tr><th>바이어</th><th>금액</th><th>결제</th><th>만기</th></tr></thead><tbody>'+
    list.map(({d,n})=>`<tr class="r" onclick="openDetail(${d.id})"><td><b>${esc(d.buyer)}</b></td><td>$${d.amt.toLocaleString()}</td><td>${PAY[d.pay]}</td><td>${d.due} ${n<0?`<span class="dd over">지연 D+${-n}</span>`:`<span class="dd soon">D-${n}</span>`}</td></tr>`).join('')+'</tbody></table>'):'<div class="empty">임박·지연 거래가 없습니다.</div>';
 }
-function renderHigh(){const hi=deals.filter(d=>d.level==='HIGH'&&d.stage<5);document.getElementById('highlist').innerHTML=hi.length?tbl(hi):'<div class="empty">고위험 거래가 없습니다.</div>';}
 function renderLedger(){
   const sel=document.getElementById('fStage'); if(sel&&sel.options.length<2){sel.innerHTML='<option value="">단계 전체</option>'+STAGES.map((s,i)=>`<option value="${i}">${i+1}. ${s}</option>`).join('');}
   const cs=document.getElementById('fCat'); if(cs&&cs.options.length<2){cs.innerHTML='<option value="">품목 전체</option>'+CATS.map(c=>`<option value="${c}">${c}</option>`).join('');}
@@ -818,6 +1011,256 @@ function renderKbFinder(){
    :'<div class="empty">해당 조합에 등록된 세부 규칙이 없습니다. 일반 절차(표준 수출 절차)가 적용됩니다.</div>';
 }
 
+/* ===== UI 개편 렌더러 ===== */
+const emptyBox=(ic,tx,cta,act)=>`<div class="empty" style="padding:40px"><div style="font-size:34px">${ic}</div><div style="margin:10px 0 14px">${tx}</div>${cta?`<button class="btn" onclick="${act}">${cta}</button>`:''}</div>`;
+
+/* 시작 가이드 */
+function renderGuide(){
+  const steps=guideSteps();const done=steps.filter(s=>s.done).length;
+  document.getElementById('guideCnt').textContent=done+'/4';
+  const el=document.getElementById('guidecard');
+  if(done===4||GUIDE.collapsed){el.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><b>🚀 시작 가이드 ${done}/4${done===4?' — 완료 🎉':''}</b><span style="flex:1"></span><button class="btn line sm" onclick="GUIDE.collapsed=false;uiSave();render()">펼치기</button></div>`;return;}
+  el.innerHTML=`<h2>🚀 시작 가이드 <span class="pill">${done}/4</span><span style="flex:1"></span><button class="btn line sm" onclick="GUIDE.collapsed=true;uiSave();render()">접기</button></h2>
+   <div class="guide">${steps.map((s,i)=>`<div class="gstep ${s.done?'done':''}"><span class="num">${s.done?'✓':i+1}</span><span class="gt">${s.lb}</span>${s.done?'':`<button class="btn ghost sm" onclick="${s.act}">실행</button>`}</div>`).join('')}</div>`;
+}
+/* 최근 활동 · 알림 · 미니 캘린더 · 빠른 링크 */
+function renderRecent(){
+  const acts=deals.flatMap(d=>(d.log||[]).map(l=>({t:l.t,b:d.buyer,m:l.msg,id:d.id}))).sort((a,b)=>a.t<b.t?1:-1).slice(0,8);
+  document.getElementById('recentact').innerHTML=acts.length?acts.map(a=>`<div class="rec" style="cursor:pointer" onclick="openDetail(${a.id})"><span>🕘</span><div><b>${esc(a.b)}</b> — ${esc(a.m)} <span class="mut" style="font-size:11px">${a.t}</span></div></div>`).join(''):emptyBox('🕘','아직 활동이 없습니다.','첫 거래 등록','openNew()');
+}
+function renderNotif(){
+  const s=taskStats();
+  const rem=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)>=0&&dday(d.due)<=POLICY.remind).length;
+  const over=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<0).length;
+  const hi=deals.filter(d=>d.level==='HIGH'&&d.stage<5).length;
+  const pol=deals.filter(d=>d.stage<5&&policyViolations(d).length).length;
+  const rows=[
+   over?`<div class="rec" style="cursor:pointer" onclick="go('calendar')"><span>🔴</span><div>회수 지연 <b>${over}건</b></div></div>`:'',
+   rem?`<div class="rec" style="cursor:pointer" onclick="go('calendar')"><span>⏰</span><div>만기 D-${POLICY.remind} 이내 <b>${rem}건</b> <span class="mut" style="font-size:11px">(정책 리마인드 기준)</span></div></div>`:'',
+   s.over.length?`<div class="rec" style="cursor:pointer" onclick="go('tasks')"><span>📌</span><div>기한 지난 할 일 <b>${s.over.length}건</b></div></div>`:'',
+   hi?`<div class="rec" style="cursor:pointer" onclick="go('wizard')"><span>⚠️</span><div>고위험 진행 거래 <b>${hi}건</b></div></div>`:'',
+   pol?`<div class="rec" style="cursor:pointer" onclick="go('policy')"><span>📏</span><div>거래 정책 위반 <b>${pol}건</b></div></div>`:'',
+  ].filter(Boolean).join('');
+  document.getElementById('notif').innerHTML=rows||'<div class="mut" style="font-size:12.5px">새 알림이 없습니다.</div>';
+}
+function renderQuick(){document.getElementById('quicklinks').innerHTML=LINKS.slice(0,3).map(l=>`<a href="${l[2]}" target="_blank" rel="noopener"><span>${l[0]}</span><span>↗</span></a>`).join('');}
+function monthCells(y,m){
+  const first=new Date(y,m,1),start=new Date(first);start.setDate(1-first.getDay());
+  return Array.from({length:42},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);return d;});
+}
+function dueMap(){const m={};deals.forEach(d=>{if(d.due&&d.stage<5)(m[d.due]=m[d.due]||[]).push(d);});return m;}
+function renderMiniCal(){
+  const t=new Date(),y=t.getFullYear(),mo=t.getMonth(),dm=dueMap(),ti=iso(t);
+  document.getElementById('minical').innerHTML=`<div style="font-size:12px;font-weight:800;margin-bottom:6px">${y}년 ${mo+1}월</div><div class="minical">${['일','월','화','수','목','금','토'].map(d=>`<span class="mut" style="font-size:10px">${d}</span>`).join('')}
+   ${monthCells(y,mo).map(d=>{const di=iso(d);const evs=dm[di];const out=d.getMonth()!==mo;
+    return`<span class="md ${di===ti?'today':''}" style="${out?'opacity:.3;':''}${evs?'cursor:pointer;':''}" ${evs?`onclick="openDetail(${evs[0].id})" title="${evs.map(x=>x.buyer).join(', ')}"`:''}>${d.getDate()}${evs?`<span class="dot ${dday(di)<0?'over':''}"></span>`:''}</span>`;}).join('')}</div>`;
+}
+/* 회수 캘린더 (월간) */
+function renderCal(){
+  const base=new Date();base.setMonth(base.getMonth()+calOff);
+  const y=base.getFullYear(),mo=base.getMonth(),dm=dueMap(),ti=iso(new Date());
+  document.getElementById('calbody').innerHTML=`
+   <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button class="btn line sm" onclick="calOff--;renderCal()">←</button><b style="font-size:15px">${y}년 ${mo+1}월</b><button class="btn line sm" onclick="calOff++;renderCal()">→</button><span style="flex:1"></span><span class="pill">지연=빨강 · D-7 이내=주황</span></div>
+   <div class="cal">${['일','월','화','수','목','금','토'].map(d=>`<span class="ch">${d}</span>`).join('')}
+   ${monthCells(y,mo).map(d=>{const di=iso(d);const evs=dm[di]||[];
+    return`<div class="cd ${d.getMonth()!==mo?'out':''} ${di===ti?'today':''}"><span class="dn">${d.getDate()}</span>
+     ${evs.map(x=>{const n=dday(di);return`<span class="ev ${n<0?'over':n<=7?'soon':''}" onclick="openDetail(${x.id})">${esc(x.buyer)} $${(x.amt/1000).toFixed(0)}k</span>`;}).join('')}</div>`;}).join('')}</div>`;
+}
+/* 바이어 분할 뷰 */
+function renderBuyers(){
+  const q=(document.getElementById('bq')?.value||'').toLowerCase();
+  const bs=buyerList().filter(b=>(b.name+b.country).toLowerCase().includes(q));
+  if(!curBuyer&&bs.length)curBuyer=bs[0].name;
+  document.getElementById('blist').innerHTML=bs.length?bs.map(b=>`<div class="bi ${curBuyer===b.name?'sel':''}" onclick="curBuyer='${esc(b.name).replace(/'/g,"\\'")}';renderBuyers()">
+    <div class="bn">${esc(b.name)}</div><div class="bm">${esc(b.country)} · ${b.cat} · 거래 ${b.deals.length}건 ${b.late?`<span class="dd over">지연 ${b.late}</span>`:''}</div></div>`).join(''):emptyBox('👥','바이어가 없습니다. 거래를 등록하면 자동 생성됩니다.','신규 거래','openNew()');
+  const b=bs.find(x=>x.name===curBuyer);
+  const bd=document.getElementById('bdetail');
+  if(!b){bd.innerHTML='<div class="empty">바이어를 선택하세요.</div>';return;}
+  const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
+  bd.innerHTML=`<h2>${esc(b.name)} <span class="pill">${esc(b.country)}</span><span class="pill">${b.cat}</span></h2>
+   <div class="row"><div><label>신용확인 상태 (최근 거래 기준)</label><div class="pill" style="font-size:13px">${b.credit==='NA'?'미확인(조사 전)':'K-SURE 조사 결과 '+b.credit}</div></div>
+   <div><label>K-SURE 신용조사 신청 상태</label><select style="width:auto" onchange="setBuyerReq('${esc(b.name).replace(/'/g,"\\'")}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select></div></div>
+   <label>내부 거래이력 점수 (결정론 — 당사 원장 ${b.deals.length}건 기준)</label>
+   <div class="ksbox">완료 ${b.done}건 · 회수 지연 경험 <b>${b.late}건</b>${b.late?' — 재거래 시 선수금·부보 조건 강화 검토':''}<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 (내부 데이터). 외부 지급능력 판단은 K-SURE 신용조사로 확인하세요.</div></div>
+   ${ksureInfoHTML(b.country,b.cat)}
+   <label>거래 이력</label>${tbl(b.deals)}
+   <div style="margin-top:10px"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 안내 ↗</a></div>`;
+}
+function renderCredit(){
+  const bs=buyerList();const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
+  document.getElementById('creditlist').innerHTML=bs.length?`<table><thead><tr><th>바이어</th><th>국가</th><th>신용확인 상태</th><th>신청 상태</th><th></th></tr></thead><tbody>
+   ${bs.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td>${esc(b.country)}</td><td>${b.credit==='NA'?'<span class="dd soon">미확인</span>':b.credit}</td>
+   <td><select style="width:auto" onchange="setBuyerReq('${esc(b.name).replace(/'/g,"\\'")}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select></td>
+   <td><span class="dc" onclick="curBuyer='${esc(b.name).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">상세</span></td></tr>`).join('')}</tbody></table><div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`
+   :emptyBox('🔎','추적할 바이어가 없습니다.','신규 거래','openNew()');
+}
+/* 위험 진단 마법사 */
+let wizSel=null;
+function renderWizard(){
+  const actives=deals.filter(d=>d.stage<5);
+  const el=document.getElementById('wizbody');
+  if(!actives.length){el.innerHTML=emptyBox('🛡','진단할 진행 중 거래가 없습니다.','신규 거래 등록','openNew()');return;}
+  if(!wizSel||!actives.some(d=>d.id===wizSel))wizSel=actives[0].id;
+  const d=actives.find(x=>x.id===wizSel);
+  const hist=buyerHistory(d);const noG=['OA','TT_A','DA'].includes(d.pay);
+  const insTask=(d.tasks||[]).find(t=>t.title.includes('K-SURE 단기수출보험 부보'));
+  const c1ok=d.credit!=='NA'||!!hist,c2ok=!noG||(insTask&&insTask.done)||((d.sim&&Number(d.sim.adv))||0)>=30,c3ok=d.insp&&!!d.inco;
+  const badge=ok=>ok?'<span class="badge LOW">양호</span>':'<span class="badge MED">조치 필요</span>';
+  const pol=policyViolations(d);
+  el.innerHTML=`
+   <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px"><label style="margin:0">진단할 거래</label>
+   <select style="width:auto" onchange="wizSel=Number(this.value);renderWizard()">${actives.map(x=>`<option value="${x.id}" ${x.id===wizSel?'selected':''}>${esc(x.buyer)} — ${esc(x.item)}</option>`).join('')}</select>
+   <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></div>
+   ${pol.map(v=>`<div class="warnbar">⚠ 거래 정책 위반: ${v}</div>`).join('')}
+   <div class="wiz3">
+    <div class="wcard"><span class="wi">🧾</span><span class="wt">① 바이어 확인 ${badge(c1ok)}</span>
+     <span class="wd">${hist?`재거래 바이어 — 원장 ${hist.n}건(지연 ${hist.late}건)`:'신규 거래처 — 내부 정보만으로 판단 불가'}<br>신용확인: ${d.credit==='NA'?'<b>미확인(조사 전)</b>':'K-SURE 조사 '+d.credit}</span>
+     <button class="btn ghost sm" onclick="curBuyer='${esc(d.buyer).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">확인하기</button></div>
+    <div class="wcard"><span class="wi">💳</span><span class="wt">② 결제·보험 ${badge(c2ok)}</span>
+     <span class="wd">${PAY[d.pay]} — ${noG?'<b>무담보 거래</b>':'담보성 결제'}<br>부보 검토: ${insTask?(insTask.done?'이행 완료':'미이행'):'해당 없음'} · 선수금 ${(d.sim&&d.sim.adv)||0}%</span>
+     <button class="btn ghost sm" onclick="openDetail(${d.id});curTab='회수 시뮬레이터';renderDetail(${d.id})">검토하기</button></div>
+    <div class="wcard"><span class="wi">📜</span><span class="wt">③ 계약 방어 ${badge(c3ok)}</span>
+     <span class="wd">검사·클레임 기한: ${d.insp?'명시':'<b>미설정</b>'}<br>인코텀즈: ${d.inco||'<b>미선택</b>'}</span>
+     <button class="btn ghost sm" onclick="openDetail(${d.id});curTab='계약';renderDetail(${d.id})">점검하기</button></div>
+   </div>
+   <button class="cta" onclick="runWizard(${d.id})">🛡 입력된 정보로 위험 진단하기</button>
+   <div class="mut" style="font-size:12px;margin-top:12px">${DISCLAIMER}</div>`;
+}
+function runWizard(id){GUIDE.diag=true;uiSave();openDetail(id);curTab='위험 지표';renderDetail(id);render();}
+/* 리스크 규칙 */
+let rulesTab='전체';
+function renderRules(){
+  const kb=KB_RULES.map((r,i)=>({id:'kb'+i,name:r.note.split('—')[0].trim().slice(0,34),desc:r.note,cat:'통관',src:'무역 실무 요건 요약, 2026-07 기준'}));
+  const all=[...CORE_RULES,...kb];
+  const cats=['전체','결제','계약','통관','사기'];
+  const list=all.filter(r=>rulesTab==='전체'||r.cat===rulesTab);
+  document.getElementById('rulesbody').innerHTML=`
+   <div style="display:flex;gap:6px;margin-bottom:14px">${cats.map(c=>`<button class="pill" style="cursor:pointer;${rulesTab===c?'background:var(--pri);color:#fff':''}" onclick="rulesTab='${c}';renderRules()">${c}</button>`).join('')}<span style="flex:1"></span><span class="pill">사용 ${all.filter(r=>ruleOn(r.id)).length}/${all.length}</span></div>
+   <table><thead><tr><th>규칙</th><th>설명</th><th>카테고리</th><th>출처·기준일</th><th>상태</th></tr></thead><tbody>
+   ${list.map(r=>`<tr style="${ruleOn(r.id)?'':'opacity:.45'}"><td style="font-weight:700;white-space:nowrap">${esc(r.name)}</td><td style="font-size:12.5px">${esc(r.desc)}</td><td><span class="pill">${r.cat}</span></td><td class="mut" style="font-size:11.5px">${esc(r.src)}</td>
+   <td><span class="togg ${ruleOn(r.id)?'on':''}" onclick="toggleRule('${r.id}')" title="${ruleOn(r.id)?'사용 중 — 클릭 시 진단에서 제외':'미사용 — 클릭 시 다시 적용'}"></span></td></tr>`).join('')}</tbody></table>
+   <div class="mut" style="font-size:12px;margin-top:10px">미사용 규칙은 위험 지표 계산·할 일 생성에서 즉시 제외되고, 전 거래가 재진단됩니다.</div>`;
+}
+/* 거래 정책 */
+function renderPolicy(){
+  const vio=deals.filter(d=>d.stage<5).flatMap(d=>policyViolations(d).map(v=>({d,v})));
+  document.getElementById('policybody').innerHTML=`
+   <div class="wiz3">
+    <div class="wcard"><span class="wi">💰</span><span class="wt">무담보 거래 한도</span><span class="wd">O/A·사후T/T·D/A 거래의 금액 상한. 초과 시 경고.</span>
+     <div style="display:flex;gap:6px;align-items:center">$ <input type="number" style="width:130px" value="${POLICY.nolimit}" onchange="POLICY.nolimit=Number(this.value)||0;uiSave();render()"></div></div>
+    <div class="wcard"><span class="wi">🧾</span><span class="wt">신규 바이어 선수금 하한</span><span class="wd">거래 이력 없는 바이어의 최소 선수금 비율.</span>
+     <div style="display:flex;gap:6px;align-items:center"><input type="number" style="width:90px" value="${POLICY.advmin}" onchange="POLICY.advmin=Number(this.value)||0;uiSave();render()"> %</div></div>
+    <div class="wcard"><span class="wi">⏰</span><span class="wt">만기 리마인드 시점</span><span class="wd">만기 며칠 전부터 알림·임박으로 볼지.</span>
+     <div style="display:flex;gap:6px;align-items:center">D- <input type="number" style="width:90px" value="${POLICY.remind}" onchange="POLICY.remind=Number(this.value)||0;uiSave();render()"> 일</div></div>
+   </div>
+   <h2 style="font-size:15px">현재 위반 감지 ${vio.length}건</h2>
+   ${vio.length?vio.map(({d,v})=>`<div class="warnbar" style="cursor:pointer" onclick="openDetail(${d.id})">⚠ <b>${esc(d.buyer)}</b> — ${v}</div>`).join(''):'<div class="mut" style="font-size:13px">위반 거래가 없습니다.</div>'}`;
+}
+/* 거래 서류함 */
+const DOC_SLOTS=['P/I','계약서','B/L','C/O','보험증권'];
+function cycleDoc(id,si){
+  const d=deals.find(x=>x.id===id);d.docs=d.docs||{};const cur=d.docs[si]||{st:0,note:''};
+  cur.st=(cur.st+1)%3;
+  if(cur.st===1){let n='';try{n=prompt(DOC_SLOTS[si]+' — 문서 이름·메모 (선택)')||'';}catch(e){}cur.note=n;}
+  d.docs[si]=cur;logIt(d,`서류 상태: ${DOC_SLOTS[si]} → ${['미등록','등록','확정'][cur.st]}`);save();renderDocs();
+}
+function renderDocs(){
+  const list=deals.filter(d=>d.stage<5);
+  document.getElementById('docsbody').innerHTML=list.length?`<table><thead><tr><th>거래</th><th>서류 (클릭: 미등록→등록→확정)</th></tr></thead><tbody>
+   ${list.map(d=>{d.docs=d.docs||{};return`<tr><td style="white-space:nowrap"><b>${esc(d.buyer)}</b><div class="mut" style="font-size:11px">${STAGES[d.stage]}</div></td>
+   <td>${DOC_SLOTS.map((s,i)=>{const st=(d.docs[i]||{}).st||0;const note=(d.docs[i]||{}).note||'';return`<span class="dslot s${st}" onclick="cycleDoc(${d.id},${i})" title="${esc(note)||s}">${st===2?'✓ ':st===1?'● ':''}${s}</span>`;}).join('')}
+   ${!((d.docs[1]||{}).st)?'<div class="mut" style="font-size:11px;margin-top:4px">계약서를 등록해 주세요</div>':''}</td></tr>`;}).join('')}</tbody></table>`
+   :emptyBox('📁','진행 중 거래가 없습니다.','신규 거래','openNew()');
+}
+/* 인사이트 */
+function renderInsights(){
+  const el=document.getElementById('insightsbody');
+  if(!deals.length){el.innerHTML='<div class="panel">'+emptyBox('📈','분석할 데이터가 없어요.','첫 거래 등록','openNew()')+'</div>';return;}
+  const t=deals.length;
+  const hi=deals.filter(d=>d.level==='HIGH'&&d.stage<5).length,act=deals.filter(d=>d.stage<5).length;
+  const insT=deals.flatMap(d=>(d.tasks||[]).filter(x=>x.title.includes('K-SURE 단기수출보험 부보')));
+  const lateD=deals.filter(d=>(d.tasks||[]).some(x=>x.title.includes('대금 미회수'))).length,dueD=deals.filter(d=>d.due).length;
+  const coll=deals.filter(d=>d.stage===5&&d.doneAt&&d.due).map(d=>Math.round((new Date(d.doneAt)-new Date(d.due))/86400000));
+  const avg=coll.length?Math.round(coll.reduce((a,b)=>a+b,0)/coll.length):null;
+  const pct=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+  el.innerHTML=`
+   <div class="funnel">${STAGES.map((s,i)=>{const c=deals.filter(d=>d.stage===i).length;return`<div class="fstep" style="cursor:pointer" onclick="document.getElementById('fStage').value='${i}';go('ledger');renderLedger()"><div class="fn">${c}</div><div class="fl">${s}</div></div>`;}).join('')}</div>
+   <div class="metric4">
+    <div class="kpi"><div class="l">⚠ 고위험 비율 (진행 거래)</div><div class="n">${pct(hi,act)}</div><div class="mut" style="font-size:11px">${hi}/${act}건</div></div>
+    <div class="kpi"><div class="l">🛟 부보 권유 이행률</div><div class="n">${insT.length?pct(insT.filter(x=>x.done).length,insT.length):'—'}</div><div class="mut" style="font-size:11px">${insT.length?insT.filter(x=>x.done).length+'/'+insT.length+'건':'권유 대상 없음'}</div></div>
+    <div class="kpi"><div class="l">🔴 회수 지연 발생률</div><div class="n">${pct(lateD,dueD)}</div><div class="mut" style="font-size:11px">${lateD}/${dueD}건 (만기 보유 거래 기준)</div></div>
+    <div class="kpi"><div class="l">📆 평균 회수 소요 (만기 대비)</div><div class="n">${avg===null?'—':(avg>0?'+':'')+avg+'일'}</div><div class="mut" style="font-size:11px">${avg===null?'완료·기록 데이터 부족':coll.length+'건 평균'}</div></div>
+   </div>
+   <div class="mut" style="font-size:12px;margin-top:12px">전 지표는 거래원장 ${t}건의 결정론 집계입니다(추정·예측 아님).</div>`;
+}
+/* 수출보험 페이지 */
+function renderKsurePage(){
+  const rec=deals.filter(d=>d.stage<5&&(['OA','TT_A','DA'].includes(d.pay)||d.amt>=50000||!buyerHistory(d)));
+  document.getElementById('ksurebody').innerHTML=`
+   <div class="panel"><h2>🛟 단기수출보험이란</h2><div style="font-size:13.5px;line-height:1.8">수출대금을 회수하지 못할 위험(바이어 지급불능·지급거절 등)에 대비하는 한국무역보험공사(K-SURE)의 공적 보험입니다. ExportOS는 <b>안내·권유·연결까지만</b> 제공하며, 보험 인수·보상 판단은 K-SURE가 수행합니다. <b>보험료·요율은 상담으로 확인하세요.</b></div>
+   <div style="margin-top:12px;display:flex;gap:8px"><a class="btn" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 상담·신청 안내 ↗</a><a class="btn line" href="https://www.ksure.or.kr" target="_blank" rel="noopener">국가신용등급 공개표 ↗</a></div></div>
+   <div class="panel"><h2>이런 거래에 부보를 권장합니다</h2>
+   ${rec.length?tbl(rec)+'<div class="mut" style="font-size:12px;margin-top:8px">기준: 무담보 결제(O/A·사후T/T·D/A) 또는 $50,000 이상 또는 신규 바이어.</div>':'<div class="mut" style="font-size:13px">현재 권장 대상 거래가 없습니다.</div>'}</div>
+   <div class="panel mut" style="font-size:12px">${DISCLAIMER}</div>`;
+}
+/* 무역 파트너스 */
+function renderPartners(){
+  const cards=[['🛃','관세사 파트너스','수출신고·FTA 원산지·품목분류 확정','제휴 예정'],['⚖️','법률 파트너스','계약서 검토·분쟁 대응·국제 중재','제휴 예정'],['🎓','무역실무 전문가','결제조건 설계·서류 실무·바이어 협상','제휴 예정']];
+  document.getElementById('partnersbody').innerHTML=`<div class="wiz3">${cards.map(c=>`<div class="wcard"><span class="wi">${c[0]}</span><span class="wt">${c[1]}</span><span class="wd">${c[2]}</span><span class="pill">${c[3]}</span><button class="btn ghost sm" onclick="partnerModal('${c[1]}')">상담 요청</button></div>`).join('')}</div>
+   <div class="panel mut" style="font-size:12px;margin-top:16px">파트너 제휴 전까지는 공식 기관 창구(한국무역협회 무역상담, 관세청 고객센터)로 연결해 드립니다. 실존 업체명은 제휴 확정 후 표기됩니다.</div>`;
+}
+function partnerModal(name){
+  const g=document.getElementById('gate');
+  g.innerHTML=`<div class="gbox"><h3>🤝 ${esc(name)} 상담 요청</h3>
+   <div class="mut" style="font-size:13px;line-height:1.7">파트너 제휴 준비 중입니다. 지금은 아래 공식 상담 창구를 이용하세요.</div>
+   <div class="links" style="margin-top:12px"><a href="https://www.kita.net" target="_blank" rel="noopener"><span>한국무역협회 무역상담</span><span>↗</span></a><a href="https://www.customs.go.kr" target="_blank" rel="noopener"><span>관세청</span><span>↗</span></a></div>
+   <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn line sm" onclick="closeGate()">닫기</button></div></div>`;
+  g.classList.add('on');
+}
+/* 설정 드로어 */
+function openSettings(){
+  const audit=deals.flatMap(d=>(d.log||[]).map(l=>({t:l.t,b:d.buyer,m:l.msg}))).sort((a,b)=>a.t<b.t?1:-1).slice(0,40);
+  document.getElementById('sheet').innerHTML=`
+   <div class="sh"><div><h2 style="margin:0;font-size:18px">설정</h2><div class="mut" style="font-size:12.5px;margin-top:3px">회사 정보는 거래 등록 기본값과 홈 인사말에 사용됩니다.</div></div><button class="x" onclick="closeSheet()">✕</button></div>
+   <div class="sb">
+    <h2 style="font-size:15px;margin:0 0 12px">🏢 회사 정보 (수출자 프로필)</h2>
+    <div class="row"><div><label>상호 / 대표자</label><input id="pf_name" value="${esc(PROFILE.name)}" placeholder="예: 청정 수출"></div><div><label>주력 품목 카테고리</label><select id="pf_cat">${opt(['',...CATS],['— 선택 —',...CATS],PROFILE.cat)}</select></div></div>
+    <div class="row"><div><label>연락처 (문안 서명 등에 활용)</label><input id="pf_contact" value="${esc(PROFILE.contact)}" placeholder="이메일·전화"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="PROFILE={name:v('pf_name'),cat:v('pf_cat'),contact:v('pf_contact')};uiSave();render();toast('회사 정보가 저장되었습니다')">저장</button></div></div>
+    <h2 style="font-size:15px;margin:18px 0 10px">⚙ 데이터</h2>
+    <div style="display:flex;gap:8px;margin-bottom:16px"><button class="btn line sm" onclick="closeSheet();go('data')">데이터 관리 열기</button><button class="btn line sm" onclick="exportJSON()">JSON 내보내기</button></div>
+    <h2 style="font-size:15px;margin:0 0 10px">🧾 감사 로그 (전 거래 활동 통합, 최근 40건)</h2>
+    <div class="log">${audit.map(a=>`<div>${a.t} — <b>${esc(a.b)}</b>: ${esc(a.m)}</div>`).join('')||'<div class="mut">기록 없음</div>'}</div>
+   </div>`;
+  openSheet();
+}
+/* 커맨드 팔레트 (Cmd+K) */
+function palActions(){return[
+ {lb:'＋ 신규 거래 등록',h:'액션',run:()=>openNew()},
+ {lb:'🛡 위험 진단 열기',h:'액션',run:()=>go('wizard')},
+ {lb:'✉ 독촉 문안 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
+ {lb:'👥 바이어 검색',h:'이동',run:()=>go('buyers')},
+ {lb:'▤ 거래원장에서 검색',h:'이동',run:()=>go('ledger')},
+];}
+function openPal(){document.getElementById('pal').classList.add('on');const q=document.getElementById('palq');q.value='';palIdx=0;renderPal();setTimeout(()=>q.focus(),40);}
+function closePal(){document.getElementById('pal').classList.remove('on');}
+function renderPal(){
+  const q=(document.getElementById('palq').value||'').toLowerCase();
+  const acts=palActions().filter(a=>a.lb.toLowerCase().includes(q));
+  const ds=q?deals.filter(d=>(d.buyer+d.item+d.country).toLowerCase().includes(q)).slice(0,6).map(d=>({lb:`${d.buyer} — ${d.item}`,h:STAGES[d.stage],run:()=>openDetail(d.id)})):[];
+  window._pal=[...acts,...ds];
+  if(palIdx>=window._pal.length)palIdx=0;
+  document.getElementById('palout').innerHTML=window._pal.length?window._pal.map((a,i)=>`<div class="pitem ${i===palIdx?'sel':''}" onclick="palIdx=${i};palGo()">${a.lb}<span class="ph">${a.h}</span></div>`).join(''):'<div class="empty">결과 없음</div>';
+}
+function palGo(){const a=(window._pal||[])[palIdx];if(!a)return;closePal();a.run();}
+function palKey(e){
+  if(e.key==='ArrowDown'){e.preventDefault();palIdx=Math.min(palIdx+1,(window._pal||[]).length-1);renderPal();}
+  else if(e.key==='ArrowUp'){e.preventDefault();palIdx=Math.max(palIdx-1,0);renderPal();}
+  else if(e.key==='Enter'){e.preventDefault();palGo();}
+  else if(e.key==='Escape'){closePal();}
+}
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();document.getElementById('pal').classList.contains('on')?closePal():openPal();}});
+document.getElementById('pal').addEventListener('click',e=>{if(e.target.id==='pal')closePal();});
+
 /* ---------- 드래그 ---------- */
 function dStart(id){dragId=id;}
 function dOver(e,ci){e.preventDefault();document.querySelector(`.col[data-ci="${ci}"]`).classList.add('drag');}
@@ -831,7 +1274,7 @@ function formSheet(d){
   document.getElementById('sheet').innerHTML=`
    <div class="sh"><div><h2 style="margin:0;font-size:18px">${d.id?'거래 수정':'신규 거래 등록'}</h2><div class="mut" style="font-size:12.5px;margin-top:3px">입력 시 결제·계약 위험을 자동 진단하고, 단계별 실무 절차를 자동 생성합니다.</div></div><button class="x" onclick="closeSheet()">✕</button></div>
    <div class="sb">
-    <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||'')}" placeholder="예: 냉동 수산물 (0303.89)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||'일반')}</select></div></div>
+    <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||'')}" placeholder="예: 냉동 수산물 (0303.89)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||PROFILE.cat||'일반')}</select></div></div>
     <div class="row"><div><label>바이어명</label><input id="m_buyer" value="${esc(d.buyer||'')}"></div><div><label>수입국</label><input id="m_country" value="${esc(d.country||'')}" placeholder="미국" oninput="renderKsForm()"></div></div>
     <div id="m_ksinfo">${ksureInfoHTML(d.country||'',d.cat||'')}</div>
     <div class="row"><div><label>거래금액 (USD)</label><input id="m_amt" type="number" value="${d.amt||''}"></div><div><label>신용확인 상태 (K-SURE 국외기업 신용조사)</label><select id="m_credit">${opt(['A','B','C','D','NA'],['A (조사 완료·양호)','B (조사 완료·보통)','C (조사 완료·주의)','D (조사 완료·위험)','미확인 (조사 전)'],d.credit||'NA')}</select></div></div>
@@ -878,7 +1321,8 @@ function detailTab(d){
   if(curTab==='개요'){
     const p=stageProgress(d);
     const riskTasks=(d.tasks||[]).filter(t=>t.src==='risk');
-    return `<div class="riskbox ${d.level}"><b>결제·계약 위험 ${d.score}/100 · ${relabel(d.level)}</b><div class="mut" style="font-size:12.5px;margin-top:4px">${PAY_RISK[d.pay]}</div></div>
+    return `${policyViolations(d).map(v=>`<div class="warnbar">⚠ 거래 정책 위반: ${v} <span class="dc" style="float:right" onclick="go('policy');closeSheet()">정책 보기</span></div>`).join('')}
+      <div class="riskbox ${d.level}"><b>결제·계약 위험 ${d.score}/100 · ${relabel(d.level)}</b><div class="mut" style="font-size:12.5px;margin-top:4px">${PAY_RISK[d.pay]}</div></div>
       <label>진행 단계 (클릭으로 이동 — 필수 절차 미완료 시 확인 요청)</label>${stepperHTML(d)}
       ${p.total?`<label>현 단계(${STAGES[d.stage]}) 절차 진행률</label><div class="prog ${p.pct<100?'warn':''}" style="height:8px;margin:2px 0 4px"><i style="width:${p.pct}%"></i></div><div class="progl"><span></span><span>${p.done}/${p.total} 완료</span></div>`:''}
       <label style="margin-top:14px">위험조치 권장 (이행 시 체크)</label>
@@ -1044,8 +1488,9 @@ function importCSV(inp){
 function openSheet(){document.getElementById('mask').classList.add('on');}
 function closeSheet(){document.getElementById('mask').classList.remove('on');}
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
-function go(v){['dash','tasks','board','ledger','res','data'].forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
-document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(a&&a.dataset.v)go(a.dataset.v);});
+const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','calendar','insights','ksure','partners'];
+function go(v){VIEWS.forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
+document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.v)go(a.dataset.v);else if(a.dataset.act==='settings')openSettings();});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
 const v=id=>document.getElementById(id).value.trim();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1072,7 +1517,7 @@ function seedData(){
   });
 }
 function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
-ksureLoad();
+uiLoad();ksureLoad();
 load();if(!deals.length)seedData();
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
 selfTest(); /* 회귀 테스트 — 결과는 [데이터 관리] 뷰와 콘솔에 표시 */
