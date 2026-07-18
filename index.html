@@ -167,7 +167,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 .dslot.s1{background:var(--pri-l);color:var(--pri-d);border-color:#c8d2e8;}
 .dslot.s2{background:var(--green-l);color:var(--green);border-color:#bfe2cd;}
 /* calendar */
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
 .cal .ch{text-align:center;font-size:11px;color:var(--mut);font-weight:700;padding:4px 0;}
 .cal .cd{min-height:64px;border:1px solid var(--line);border-radius:9px;padding:5px 6px;font-size:11px;background:#fff;}
 .cal .cd.out{opacity:.35;}
@@ -192,6 +192,38 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 .togg::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.15s;}
 .togg.on::after{left:17px;}
 @media (max-width:1100px){.home3{grid-template-columns:1fr;}.wiz3{grid-template-columns:1fr;}.metric4{grid-template-columns:repeat(2,1fr);}.split{grid-template-columns:1fr;}}
+/* ===== 모바일 (전시회·이동 중 사용) ===== */
+.mnb{display:none;background:none;border:0;font-size:20px;color:var(--pri-d);cursor:pointer;padding:4px 6px;}
+@media (max-width:760px){
+ .mnb{display:inline-flex;}
+ .top{gap:8px;padding:0 10px;}
+ .search{display:none;}
+ .brand{font-size:16px;}
+ .btn{padding:8px 12px;font-size:12.5px;white-space:nowrap;}
+ .side{position:fixed;left:0;top:58px;bottom:0;z-index:55;width:250px;transform:translateX(-105%);transition:transform .2s ease;overflow-y:auto;box-shadow:8px 0 30px rgba(0,0,0,.12);min-height:0;}
+ .side.open{transform:none;}
+ .main{padding:12px;max-width:100%;}
+ .kpis{grid-template-columns:repeat(2,1fr);gap:10px;}
+ .kpi .n{font-size:22px;}
+ .phead h1{font-size:18px;}
+ .row{grid-template-columns:1fr;}
+ .board{display:flex;overflow-x:auto;padding-bottom:8px;}
+ .board .col{flex:0 0 240px;min-width:240px;}
+ .panel{overflow-x:auto;}
+ .tabs{position:static;}
+ .tabs button{padding:9px 8px;font-size:12.5px;}
+ .stepper{overflow-x:auto;}
+ .step{min-width:64px;font-size:10px;}
+ .cal .cd{min-height:46px;padding:3px 4px;font-size:10px;}
+ .cal .ev{font-size:9.5px;padding:1px 3px;}
+ .funnel{overflow-x:auto;flex-wrap:nowrap;}
+ .fstep{min-width:92px;}
+ .metric4{grid-template-columns:1fr 1fr;gap:10px;}
+ .trow{flex-wrap:wrap;}
+ .trow .dc{margin-left:auto;}
+ .pbox{width:94%;}
+ .sheet{width:100%;}
+}
 .pill{display:inline-block;font-size:11px;background:#eef1f7;color:#556;border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;}
 .empty{text-align:center;color:var(--mut);padding:26px;font-size:13.5px;}
 /* stage accordion in detail */
@@ -227,6 +259,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 </head>
 <body>
 <div class="top">
+  <button class="mnb" id="mnb" onclick="document.querySelector('.side').classList.toggle('open')">☰</button>
   <div class="brand"><span class="dot"></span>ExportOS</div>
   <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
@@ -1634,7 +1667,7 @@ function closeSheet(){document.getElementById('mask').classList.remove('on');}
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
 const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','docslib','calendar','insights','ksure','partners'];
 function go(v){VIEWS.forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
-document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.v)go(a.dataset.v);else if(a.dataset.act==='settings')openSettings();});
+document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.v)go(a.dataset.v);else if(a.dataset.act==='settings')openSettings();document.querySelector('.side').classList.remove('open');});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
 const v=id=>document.getElementById(id).value.trim();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
