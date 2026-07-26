@@ -272,7 +272,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="dash" class="active"><span class="i">▦</span> 홈 피드</a>
     <a data-v="tasks"><span class="i">☑</span> 할 일 <span class="nb hide" id="taskbadge"></span></a>
     <a data-v="board"><span class="i">🗂</span> 진행 보드</a>
-    <a data-v="ledger"><span class="i">▤</span> 거래원장</a>
+    <a data-v="ledger"><span class="i">▤</span> 전체 거래</a>
     <div class="grp">바이어</div>
     <a data-v="buyers"><span class="i">👥</span> 바이어</a>
     <a data-v="credit"><span class="i">🔎</span> 바이어 확인 현황</a>
@@ -390,7 +390,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- LEDGER -->
     <section id="v-ledger" class="hide">
-      <div class="phead"><div><h1>거래원장</h1><div class="d">모든 거래가 하나의 원장에 축적됩니다.</div></div></div>
+      <div class="phead"><div><h1>전체 거래</h1><div class="d">모든 거래가 하나의 장부(거래 장부)에 축적됩니다.</div></div></div>
       <div class="panel">
         <div class="toolbar">
           <input type="search" id="q" placeholder="검색" oninput="renderLedger()">
@@ -1342,7 +1342,7 @@ function renderInsights(){
     <div class="kpi"><div class="l">🔴 회수 지연 발생률</div><div class="n">${pct(lateD,dueD)}</div><div class="mut" style="font-size:11px">${lateD}/${dueD}건 (만기 보유 거래 기준)</div></div>
     <div class="kpi"><div class="l">📆 평균 회수 소요 (만기 대비)</div><div class="n">${avg===null?'—':(avg>0?'+':'')+avg+'일'}</div><div class="mut" style="font-size:11px">${avg===null?'완료·기록 데이터 부족':coll.length+'건 평균'}</div></div>
    </div>
-   <div class="mut" style="font-size:12px;margin-top:12px">전 지표는 거래원장 ${t}건의 결정론 집계입니다(추정·예측 아님).</div>`;
+   <div class="mut" style="font-size:12px;margin-top:12px">전 지표는 전체 거래 ${t}건의 결정론 집계입니다(추정·예측 아님).</div>`;
 }
 /* 수출보험 페이지 */
 function renderKsurePage(){
@@ -1392,7 +1392,7 @@ function palActions(){return[
  {lb:'✉ 결제 리마인드 문구 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
  {lb:'👥 바이어 검색',h:'이동',run:()=>go('buyers')},
  {lb:'📚 서류 검색 (서류 라이브러리)',h:'이동',run:()=>go('docslib')},
- {lb:'▤ 거래원장에서 검색',h:'이동',run:()=>go('ledger')},
+ {lb:'▤ 전체 거래에서 검색',h:'이동',run:()=>go('ledger')},
 ];}
 function openPal(){document.getElementById('pal').classList.add('on');const q=document.getElementById('palq');q.value='';palIdx=0;renderPal();setTimeout(()=>q.focus(),40);}
 function closePal(){document.getElementById('pal').classList.remove('on');}
