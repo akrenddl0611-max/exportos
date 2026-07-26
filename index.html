@@ -460,7 +460,7 @@ function sGet(k){try{return localStorage.getItem(k);}catch(e){_persist=false;ret
 function sSet(k,v){try{localStorage.setItem(k,v);}catch(e){_persist=false;_mem[k]=v;}}
 function sDel(k){try{localStorage.removeItem(k);}catch(e){delete _mem[k];}}
 const STAGES=['리드·상담','계약','결제·생산','선적·통관','회수','완료'];
-const PAY={OA:'사후송금(O/A)',TT_A:'사후 T/T',DA:'인수인도(D/A)',DP:'지급인도(D/P)',LC:'신용장(L/C)',TT_P:'선수금 T/T'};
+const PAY={OA:'외상거래(O/A)',TT_A:'사후 T/T',DA:'인수인도(D/A)',DP:'지급인도(D/P)',LC:'신용장(L/C)',TT_P:'선수금 T/T'};
 const PAY_RISK={OA:'담보 없음 · 회수 위험 최고',TT_A:'선적 후 송금 · 회수 위험 높음',DA:'인수 후 지급 · 위험 있음',DP:'서류=지급 · 위험 낮음',LC:'은행 지급확약 · 낮음(서류 하자 유의)',TT_P:'선지급 · 위험 최저'};
 const LINKS=[['K-SURE 단기수출보험','미회수 위험 수출보험 가입','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
 const CATS=['수산식품','농식품','화장품','기계·부품','일반'];
@@ -543,7 +543,7 @@ const STAGE_TASKS=[
   {t:'FTA 활용 여부 결정 — 원산지증명(C/O) 준비',tr:'서류',req:0,off:3,link:'https://www.customs.go.kr/ftaportalkor',warn:'미활용 시 바이어 관세 부담 증가로 가격경쟁력 저하'},
   {t:'수출신고 및 신고필증 확보 — 수리일을 서류·통관 탭에 입력하면 적재 기한 D-day 자동 등록',tr:'물류·통관',req:1,off:3,link:'https://unipass.customs.go.kr',warn:'수리일부터 30일 내 적재 필요(연장 가능) — 경과 시 신고 취하·과태료 위험'},
   {t:'선적·적하보험 확인, B/L·AWB 수취',tr:'물류·통관',req:1,off:5,warn:'보험 공백 시 운송 사고 손실이 무담보가 됩니다'},
-  {t:'결제방식별 선적서류 처리 (L/C 매입 · D/A·D/P 추심 의뢰 · O/A 송부)',tr:'서류',req:1,off:5},
+  {t:'결제방식별 선적서류 처리 (L/C 매입 · D/A·D/P 추심 의뢰 · 외상거래(O/A) 송부)',tr:'서류',req:1,off:5},
   {t:'관세환급 대상 여부 확인 (소요량·간이정액 — 신청은 기업·관세사)',tr:'기타',req:0,off:7,link:'https://www.customs.go.kr',warn:'대상인데 놓치면 납부 관세 회수 기회 상실'},
   {t:'선적 통지(Shipping Advice) 발송',tr:'영업',req:0,off:2},
  ],
@@ -1265,7 +1265,7 @@ function renderPolicy(){
   const vio=deals.filter(d=>d.stage<5).flatMap(d=>policyViolations(d).map(v=>({d,v})));
   document.getElementById('policybody').innerHTML=`
    <div class="wiz3">
-    <div class="wcard"><span class="wi">💰</span><span class="wt">무담보 거래 한도</span><span class="wd">O/A·사후T/T·D/A 거래의 금액 상한. 초과 시 경고.</span>
+    <div class="wcard"><span class="wi">💰</span><span class="wt">무담보 거래 한도</span><span class="wd">외상거래(O/A)·사후T/T·D/A 거래의 금액 상한. 초과 시 경고.</span>
      <div style="display:flex;gap:6px;align-items:center">$ <input type="number" style="width:130px" value="${POLICY.nolimit}" onchange="POLICY.nolimit=Number(this.value)||0;uiSave();render()"></div></div>
     <div class="wcard"><span class="wi">🧾</span><span class="wt">신규 바이어 선수금 하한</span><span class="wd">거래 이력 없는 바이어의 최소 선수금 비율.</span>
      <div style="display:flex;gap:6px;align-items:center"><input type="number" style="width:90px" value="${POLICY.advmin}" onchange="POLICY.advmin=Number(this.value)||0;uiSave();render()"> %</div></div>
@@ -1351,7 +1351,7 @@ function renderKsurePage(){
    <div class="panel"><h2>🛟 단기수출보험이란</h2><div style="font-size:13.5px;line-height:1.8">수출대금을 회수하지 못할 위험(바이어 지급불능·지급거절 등)에 대비하는 한국무역보험공사(K-SURE)의 공적 보험입니다. TRADESIGNAL은 <b>안내·권유·연결까지만</b> 제공하며, 보험 인수·보상 판단은 K-SURE가 수행합니다. <b>보험료·요율은 상담으로 확인하세요.</b></div>
    <div style="margin-top:12px;display:flex;gap:8px"><a class="btn" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 상담·신청 안내 ↗</a><a class="btn line" href="https://www.ksure.or.kr" target="_blank" rel="noopener">국가신용등급 공개표 ↗</a></div></div>
    <div class="panel"><h2>이런 거래에 수출보험 가입을 권장합니다</h2>
-   ${rec.length?tbl(rec)+'<div class="mut" style="font-size:12px;margin-top:8px">기준: 무담보 결제(O/A·사후T/T·D/A) 또는 $50,000 이상 또는 신규 바이어.</div>':'<div class="mut" style="font-size:13px">현재 권장 대상 거래가 없습니다.</div>'}</div>
+   ${rec.length?tbl(rec)+'<div class="mut" style="font-size:12px;margin-top:8px">기준: 무담보 결제(외상거래 O/A·사후T/T·D/A) 또는 $50,000 이상 또는 신규 바이어.</div>':'<div class="mut" style="font-size:13px">현재 권장 대상 거래가 없습니다.</div>'}</div>
    <div class="panel mut" style="font-size:12px">${DISCLAIMER}</div>`;
 }
 /* 무역 파트너스 */
