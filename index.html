@@ -283,7 +283,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <div class="grp">서류·일정</div>
     <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
     <a data-v="docslib"><span class="i">📚</span> 서류 라이브러리</a>
-    <a data-v="calendar"><span class="i">📅</span> 회수 캘린더</a>
+    <a data-v="calendar"><span class="i">📅</span> 대금 일정</a>
     <div class="grp">인사이트</div>
     <a data-v="insights"><span class="i">📈</span> 인사이트</a>
     <div class="grp">연결·지원</div>
@@ -352,7 +352,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- CALENDAR -->
     <section id="v-calendar" class="hide">
-      <div class="phead"><div><h1>회수 캘린더</h1><div class="d">결제 만기를 월간으로 봅니다. 지연=빨강, 7일 내=주황.</div></div></div>
+      <div class="phead"><div><h1>대금 일정</h1><div class="d">결제 만기를 월간으로 봅니다. 지연=빨강, 7일 내=주황.</div></div></div>
       <div class="panel" id="calbody"></div>
     </section>
     <!-- INSIGHTS -->
@@ -1156,7 +1156,7 @@ function renderMiniCal(){
    ${monthCells(y,mo).map(d=>{const di=iso(d);const evs=dm[di];const out=d.getMonth()!==mo;
     return`<span class="md ${di===ti?'today':''}" style="${out?'opacity:.3;':''}${evs?'cursor:pointer;':''}" ${evs?`onclick="openDetail(${evs[0].id})" title="${evs.map(x=>x.buyer).join(', ')}"`:''}>${d.getDate()}${evs?`<span class="dot ${dday(di)<0?'over':''}"></span>`:''}</span>`;}).join('')}</div>`;
 }
-/* 회수 캘린더 (월간) */
+/* 대금 일정 (월간) */
 function renderCal(){
   const base=new Date();base.setMonth(base.getMonth()+calOff);
   const y=base.getFullYear(),mo=base.getMonth(),dm=dueMap(),ti=iso(new Date());
