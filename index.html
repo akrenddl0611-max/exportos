@@ -192,6 +192,25 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 .togg::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#fff;transition:.15s;}
 .togg.on::after{left:17px;}
 @media (max-width:1100px){.home3{grid-template-columns:1fr;}.wiz3{grid-template-columns:1fr;}.metric4{grid-template-columns:repeat(2,1fr);}.split{grid-template-columns:1fr;}}
+/* ===== 퀵 액세스 버튼·슬라이드 패널 ===== */
+.qbtn{position:relative;background:#f4f6fb;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;color:#48506a;cursor:pointer;display:inline-flex;align-items:center;gap:6px;}
+.qbtn:hover{border-color:var(--pri);color:var(--pri-d);}
+.qbtn .qn{position:absolute;top:-7px;right:-7px;background:var(--amber);color:#fff;font-size:10px;font-weight:800;border-radius:10px;padding:1px 6px;min-width:18px;text-align:center;}
+.qbtn .qn.red{background:var(--red);}
+.qmask{position:fixed;left:0;right:0;bottom:0;top:58px;background:rgba(20,28,50,.18);display:none;justify-content:flex-end;z-index:58;}
+.qmask.on{display:flex;}
+.qbox{width:348px;max-width:100%;background:var(--panel);height:100%;box-shadow:-8px 0 30px rgba(0,0,0,.14);display:flex;flex-direction:column;animation:slide .18s ease;}
+.qh{padding:13px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;font-size:14.5px;}
+.qb{flex:1;overflow-y:auto;padding:12px 14px;}
+.qfoot{padding:9px 16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--mut);}
+.qtabs{display:flex;gap:5px;margin-bottom:11px;}
+.qsec{font-size:12px;font-weight:800;margin:12px 0 7px;display:flex;align-items:center;gap:6px;}
+.qrow{display:flex;align-items:flex-start;gap:9px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;margin-bottom:7px;font-size:12.5px;background:#fff;}
+.qrow input[type=checkbox]{width:15px;height:15px;margin-top:2px;flex-shrink:0;cursor:pointer;}
+.qrow .qt{flex:1;line-height:1.45;font-weight:600;}
+.qrow.done .qt{opacity:.45;text-decoration:line-through;}
+.qrow .qd{color:var(--pri-d);cursor:pointer;font-size:11.5px;font-weight:700;white-space:nowrap;}
+.qempty{text-align:center;color:var(--mut);padding:28px 10px;font-size:13px;}
 /* ===== 모바일 (전시회·이동 중 사용) ===== */
 .mnb{display:none;background:none;border:0;font-size:20px;color:var(--pri-d);cursor:pointer;padding:4px 6px;}
 @media (max-width:760px){
@@ -223,6 +242,9 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
  .trow .dc{margin-left:auto;}
  .pbox{width:94%;}
  .sheet{width:100%;}
+ .qbtn{padding:8px 9px;}
+ .qbtn .ql{display:none;}
+ .qbox{width:100%;}
 }
 .pill{display:inline-block;font-size:11px;background:#eef1f7;color:#556;border-radius:7px;padding:2px 8px;margin:2px 4px 2px 0;}
 .empty{text-align:center;color:var(--mut);padding:26px;font-size:13.5px;}
@@ -263,6 +285,9 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
   <div class="brand"><span class="dot"></span>TRADESIGNAL</div>
   <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
+  <button class="qbtn" id="qb_tasks" onclick="openQP('tasks')">☑ <span class="ql">할 일</span><span class="qn hide"></span></button>
+  <button class="qbtn" id="qb_pay" onclick="openQP('pay')">⏰ <span class="ql">대금 일정</span><span class="qn hide"></span></button>
+  <button class="qbtn" id="qb_docs" onclick="openQP('docs')">📁 <span class="ql">서류</span><span class="qn hide"></span></button>
   <button class="btn" onclick="openNew()">＋ 신규 거래</button>
   <div class="avatar" id="avatar" onclick="openSettings()" style="cursor:pointer" title="설정 열기">👤</div>
 </div>
@@ -445,6 +470,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 </div>
 <div class="mask" id="mask"><div class="sheet" id="sheet"></div></div>
 <div class="gmask" id="gate"></div>
+<div class="qmask" id="qpanel"><div class="qbox"><div class="qh"><b id="qtitle"></b><button class="x" onclick="closeQP()">✕</button></div><div class="qb" id="qbody"></div><div class="qfoot" id="qfoot"></div></div></div>
 <div class="pmask" id="pal"><div class="pbox"><input id="palq" placeholder="명령 또는 거래·바이어 검색  (↑↓ 이동 · Enter 실행 · Esc 닫기)" oninput="renderPal()" onkeydown="palKey(event)"><div class="pout" id="palout"></div></div></div>
 <div class="toast" id="toast"></div>
 
@@ -921,7 +947,7 @@ function taskStats(){
 }
 
 /* ---------- 렌더 ---------- */
-function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderDocLib();renderCal();renderInsights();renderKsurePage();renderPartners();renderNotices();renderBadge();save();}
+function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderDocLib();renderCal();renderInsights();renderKsurePage();renderPartners();renderNotices();renderBadge();renderQuickBtns();renderQP();save();}
 function renderBadge(){
   const s=taskStats();const n=s.over.length+s.today.length;
   const b=document.getElementById('taskbadge');
@@ -1314,7 +1340,7 @@ function cycleDoc(id,name){
   const d=deals.find(x=>x.id===id);d.docs=d.docs||{};const cur=d.docs[name]||{st:0,note:''};
   cur.st=(cur.st+1)%3;
   if(cur.st===1){let n='';try{n=prompt(name+' — 문서 이름·메모 (선택)')||'';}catch(e){}cur.note=n;}
-  d.docs[name]=cur;logIt(d,`서류 상태: ${name} → ${['미등록','등록','확정'][cur.st]}`);save();renderDocs();
+  d.docs[name]=cur;logIt(d,`서류 상태: ${name} → ${['미등록','등록','확정'][cur.st]}`);save();render(); /* 서류함 화면·뱃지·퀵패널 동시 갱신 */
 }
 function renderDocs(){
   const list=deals.filter(d=>d.stage<5);
@@ -1387,6 +1413,82 @@ function openSettings(welcome){
    </div>`;
   openSheet();
 }
+/* ===== 퀵 액세스 패널 (헤더 버튼 3종) =====
+   원칙: 값은 전부 원장·할일·서류 데이터의 실시간 결정론 집계(캐시·별도 저장 없음),
+   처리(체크·상태 전환)는 기존 함수(toggleTask·cycleDoc) 그대로 호출 — 패널 전용 저장 경로 없음 */
+let qpOpen=null,qpTab='오늘',qpDocSel={};
+function quickCounts(){
+  const open=allTasks().filter(x=>!x.t.done);
+  const tOver=open.filter(x=>x.t.due&&dday(x.t.due)<0).length;
+  const tToday=open.filter(x=>x.t.due&&dday(x.t.due)===0).length;
+  const pOver=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<0).length;
+  const pSoon=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)>=0&&dday(d.due)<=7).length;
+  const docsN=deals.filter(d=>d.stage<5&&docSlots(d).some(s=>!((d.docs||{})[s]||{}).st)).length;
+  return{tasks:tOver+tToday,tasksRed:tOver>0,pay:pOver+pSoon,payRed:pOver>0,docs:docsN};
+}
+function renderQuickBtns(){
+  const c=quickCounts();
+  const set=(id,n,red)=>{const b=document.querySelector('#'+id+' .qn');b.classList.toggle('hide',!n);b.textContent=n;b.classList.toggle('red',!!red);};
+  set('qb_tasks',c.tasks,c.tasksRed);set('qb_pay',c.pay,c.payRed);set('qb_docs',c.docs,false);
+}
+function openQP(type){
+  if(qpOpen===type){closeQP();return;} /* 같은 버튼 재클릭 = 토글 */
+  qpOpen=type;qpTab='오늘';
+  document.getElementById('qpanel').classList.add('on');renderQP();
+}
+function closeQP(){qpOpen=null;document.getElementById('qpanel').classList.remove('on');}
+function qpGo(id,tab){closeQP();openDetail(id);if(tab){curTab=tab;renderDetail(id);}}
+function renderQP(){
+  if(!qpOpen)return;
+  const T={tasks:'☑ 할 일',pay:'⏰ 대금 일정',docs:'📁 서류'}[qpOpen];
+  document.getElementById('qtitle').textContent=T;
+  const body=document.getElementById('qbody'),foot=document.getElementById('qfoot');
+  const chip=(d,tab)=>`<span class="qd" onclick="qpGo(${d.id}${tab?`,'${tab}'`:''})">${esc(d.buyer)} →</span>`;
+  if(qpOpen==='tasks'){
+    const open=allTasks().filter(x=>!x.t.done);
+    const today=open.filter(x=>x.t.due&&dday(x.t.due)===0);
+    const over=open.filter(x=>x.t.due&&dday(x.t.due)<0);
+    const lists={'오늘':today,'지연':over,'전체':open};
+    const list=lists[qpTab]||[];
+    body.innerHTML=`<div class="qtabs">${Object.keys(lists).map(k=>`<button class="pill" style="cursor:pointer;${qpTab===k?'background:var(--pri);color:#fff':''}" onclick="qpTab='${k}';renderQP()">${k} ${lists[k].length}</button>`).join('')}</div>
+     ${list.length?list.map(({d,t})=>`<div class="qrow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${d.id},${t.id})"><span class="qt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}<br>${tdd(t)} <span class="mut" style="font-size:11px">${STAGES[t.stage]}</span></span>${chip(d)}</div>`).join('')
+      :`<div class="qempty">${qpTab==='오늘'?'오늘 처리할 항목이 없습니다. 👍':qpTab==='지연'?'지연된 할 일이 없습니다. 👍':'열린 할 일이 없습니다.'}</div>`}`;
+    foot.textContent='체크하면 해당 거래에 기록됩니다';
+  }else if(qpOpen==='pay'){
+    const act=deals.filter(d=>d.due&&d.stage<5);
+    const over=act.filter(d=>dday(d.due)<0).sort((a,b)=>dday(a.due)-dday(b.due));
+    const soon=act.filter(d=>dday(d.due)>=0&&dday(d.due)<=7).sort((a,b)=>dday(a.due)-dday(b.due));
+    const row=(d,over)=>`<div class="qrow"><span class="qt"><b>${esc(d.buyer)}</b> · $${(d.amt||0).toLocaleString()}<br><span class="mut" style="font-size:11px">만기 ${d.due}</span> ${ddBadge(d)}${over?`<br><span class="qd" onclick="qpGo(${d.id},'회수 시뮬레이터')">결제 리마인드 문구 열기 →</span>`:''}</span>${chip(d)}</div>`;
+    body.innerHTML=`
+     <div class="qsec" style="color:var(--red)">🔴 지연 (만기 경과) ${over.length}</div>
+     ${over.length?over.map(d=>row(d,true)).join(''):'<div class="qempty">지연된 대금이 없습니다. 👍</div>'}
+     <div class="qsec" style="color:var(--amber)">🟠 7일 이내 ${soon.length}</div>
+     ${soon.length?soon.map(d=>row(d,false)).join(''):'<div class="qempty">7일 내 만기가 없습니다.</div>'}
+     <div style="text-align:center;margin-top:10px"><span class="qd" onclick="closeQP();go('calendar')">전체 보기 → 대금 일정</span></div>`;
+    foot.textContent='금액·만기일은 등록된 거래 값 그대로입니다. 문구 발송은 직접 진행하세요(자동 발송 없음).';
+  }else{
+    const list=deals.filter(d=>d.stage<5&&docSlots(d).some(s=>!((d.docs||{})[s]||{}).st));
+    body.innerHTML=list.length?list.map(d=>{
+      const slots=docSlots(d);const miss=slots.filter(s=>!((d.docs||{})[s]||{}).st).length;
+      const opn=!!qpDocSel[d.id];
+      return`<div class="qrow" style="flex-direction:column;align-items:stretch">
+       <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="qpDocSel[${d.id}]=!qpDocSel[${d.id}];renderQP()"><b style="flex:1">${esc(d.buyer)}</b><span class="dd soon">미등록 ${miss}</span><span class="mut">${opn?'▾':'▸'}</span></div>
+       ${opn?`<div style="margin-top:8px">${slots.map(s=>{const st=((d.docs||{})[s]||{}).st||0;return`<span class="dslot s${st}" onclick="cycleDoc(${d.id},'${s}')">${st===2?'✓ ':st===1?'● ':''}${s}</span>`;}).join('')}<div style="margin-top:6px">${chip(d,'서류·통관')}</div></div>`:''}
+      </div>`;}).join('')
+     :'<div class="qempty">필수 서류가 비어 있는 거래가 없습니다. 👍</div>';
+    foot.textContent='클릭: 미등록 → 등록 → 확정. 파일 자체 저장은 지원 범위 외 — 이름·메모만 기록됩니다.';
+  }
+}
+document.getElementById('qpanel').addEventListener('click',e=>{if(e.target.id==='qpanel')closeQP();});
+/* Esc 우선순위: 팔레트 → 게이트 모달 → 상세 시트 → 퀵 패널 (최상위부터 하나만 닫음) */
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Escape')return;
+  if(document.getElementById('pal').classList.contains('on')){closePal();return;}
+  if(document.getElementById('gate').classList.contains('on')){closeGate();return;}
+  if(document.getElementById('mask').classList.contains('on')){closeSheet();return;}
+  if(qpOpen)closeQP();
+});
+
 /* 커맨드 팔레트 (Cmd+K) */
 function palActions(){return[
  {lb:'＋ 신규 거래 등록',h:'액션',run:()=>openNew()},
@@ -1411,7 +1513,7 @@ function palKey(e){
   if(e.key==='ArrowDown'){e.preventDefault();palIdx=Math.min(palIdx+1,(window._pal||[]).length-1);renderPal();}
   else if(e.key==='ArrowUp'){e.preventDefault();palIdx=Math.max(palIdx-1,0);renderPal();}
   else if(e.key==='Enter'){e.preventDefault();palGo();}
-  else if(e.key==='Escape'){closePal();}
+  else if(e.key==='Escape'){e.stopPropagation();closePal();}
 }
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){e.preventDefault();document.getElementById('pal').classList.contains('on')?closePal():openPal();}});
 document.getElementById('pal').addEventListener('click',e=>{if(e.target.id==='pal')closePal();});
