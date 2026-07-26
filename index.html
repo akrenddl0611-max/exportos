@@ -277,7 +277,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="buyers"><span class="i">👥</span> 바이어</a>
     <a data-v="credit"><span class="i">🔎</span> 바이어 확인 현황</a>
     <div class="grp">리스크</div>
-    <a data-v="wizard"><span class="i">🛡</span> 위험 진단</a>
+    <a data-v="wizard"><span class="i">🛡</span> 거래 안전 점검</a>
     <a data-v="rules"><span class="i">📚</span> 리스크 규칙</a>
     <a data-v="policy"><span class="i">📏</span> 거래 정책</a>
     <div class="grp">서류·일정</div>
@@ -327,7 +327,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- RISK WIZARD -->
     <section id="v-wizard" class="hide">
-      <div class="phead"><div><h1>위험 진단</h1><div class="d">이 거래, 안전하게 진행할 준비가 되었나요?</div></div></div>
+      <div class="phead"><div><h1>거래 안전 점검</h1><div class="d">이 거래, 안전하게 진행할 준비가 되었나요?</div></div></div>
       <div class="panel" id="wizbody"></div>
     </section>
     <!-- RISK RULES -->
@@ -385,7 +385,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- BOARD -->
     <section id="v-board" class="hide">
-      <div class="phead"><div><h1>진행 보드</h1><div class="d">카드를 드래그해 단계를 옮기세요. 필수 절차가 남아 있으면 이동 전에 알려드립니다. 카드 클릭 → 상세·위험 진단.</div></div></div>
+      <div class="phead"><div><h1>진행 보드</h1><div class="d">카드를 드래그해 단계를 옮기세요. 필수 절차가 남아 있으면 이동 전에 알려드립니다. 카드 클릭 → 상세·거래 안전 점검.</div></div></div>
       <div class="board" id="board"></div>
     </section>
     <!-- LEDGER -->
@@ -696,7 +696,7 @@ function guideSteps(){return[
  {lb:'회사정보 입력',done:!!PROFILE.name,act:'openSettings()'},
  {lb:'K-SURE 데이터 탑재',done:!!KSURE_DATA.meta.dataVersion,act:"go('data')"},
  {lb:'첫 거래 등록',done:deals.length>0,act:'openNew()'},
- {lb:'위험 진단 실행',done:GUIDE.diag,act:"go('wizard')"},
+ {lb:'거래 안전 점검 실행',done:GUIDE.diag,act:"go('wizard')"},
 ];}
 /* 바이어 엔티티 (원장에서 파생) */
 function buyerList(){
@@ -756,7 +756,7 @@ function dday(due){if(!due)return null;return Math.round((new Date(due).setHours
 function ddBadge(d){if(!d.due||d.stage===5)return'';const n=dday(d.due);if(n===null)return'';return n<0?`<span class="dd over">지연 D+${-n}</span>`:n<=7?`<span class="dd soon">임박 D-${n}</span>`:`<span class="dd ok">D-${n}</span>`;}
 function tdd(t){if(!t.due)return'';const n=dday(t.due);return n<0?`<span class="dd over">D+${-n}</span>`:n===0?`<span class="dd soon">오늘</span>`:n<=7?`<span class="dd soon">D-${n}</span>`:`<span class="dd ok">D-${n}</span>`;}
 
-/* ---------- 위험 진단 규칙 엔진 ---------- */
+/* ---------- 거래 안전 점검 규칙 엔진 ---------- */
 function assess(d){
   let s=0;const recs=[];const parts=[];
   const off=id=>ruleOn(id)?'':' (규칙 미사용 — 제외)';
@@ -814,7 +814,7 @@ function syncKbTasks(d){
       d.tasks.push(newTask(d,{title:r.task.t,track:r.task.tr,stage:r.task.st,req:!!r.task.req,due:addDays(iso(),r.task.off||7),src:'kb'}));
   });
 }
-/* 위험 진단 결과를 '위험조치' 태스크로 동기화 (완료 상태 보존) */
+/* 거래 안전 점검 결과를 '위험조치' 태스크로 동기화 (완료 상태 보존) */
 function syncRiskTasks(d){
   d.tasks=d.tasks||[];
   const plain=r=>r.replace(/<[^>]+>/g,'');
@@ -1213,7 +1213,7 @@ function renderCredit(){
    <td><span class="dc" onclick="curBuyer='${esc(b.name).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">상세</span></td></tr>`).join('')}</tbody></table><div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`
    :emptyBox('🔎','추적할 바이어가 없습니다.','신규 거래','openNew()');
 }
-/* 위험 진단 마법사 */
+/* 거래 안전 점검 마법사 */
 let wizSel=null;
 function renderWizard(){
   const actives=deals.filter(d=>d.stage<5);
@@ -1242,7 +1242,7 @@ function renderWizard(){
      <span class="wd">검사·클레임 기한: ${d.insp?'명시':'<b>미설정</b>'}<br>인코텀즈: ${d.inco||'<b>미선택</b>'}</span>
      <button class="btn ghost sm" onclick="openDetail(${d.id});curTab='계약';renderDetail(${d.id})">점검하기</button></div>
    </div>
-   <button class="cta" onclick="runWizard(${d.id})">🛡 입력된 정보로 위험 진단하기</button>
+   <button class="cta" onclick="runWizard(${d.id})">🛡 입력된 정보로 거래 안전 점검하기</button>
    <div class="mut" style="font-size:12px;margin-top:12px">${DISCLAIMER}</div>`;
 }
 function runWizard(id){GUIDE.diag=true;uiSave();openDetail(id);curTab='위험 지표';renderDetail(id);render();}
@@ -1388,7 +1388,7 @@ function openSettings(welcome){
 /* 커맨드 팔레트 (Cmd+K) */
 function palActions(){return[
  {lb:'＋ 신규 거래 등록',h:'액션',run:()=>openNew()},
- {lb:'🛡 위험 진단 열기',h:'액션',run:()=>go('wizard')},
+ {lb:'🛡 거래 안전 점검 열기',h:'액션',run:()=>go('wizard')},
  {lb:'✉ 독촉 문안 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
  {lb:'👥 바이어 검색',h:'이동',run:()=>go('buyers')},
  {lb:'📚 서류 검색 (서류 라이브러리)',h:'이동',run:()=>go('docslib')},
