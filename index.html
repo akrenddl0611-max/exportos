@@ -462,7 +462,7 @@ function sDel(k){try{localStorage.removeItem(k);}catch(e){delete _mem[k];}}
 const STAGES=['리드·상담','계약','결제·생산','선적·통관','회수','완료'];
 const PAY={OA:'사후송금(O/A)',TT_A:'사후 T/T',DA:'인수인도(D/A)',DP:'지급인도(D/P)',LC:'신용장(L/C)',TT_P:'선수금 T/T'};
 const PAY_RISK={OA:'담보 없음 · 회수 위험 최고',TT_A:'선적 후 송금 · 회수 위험 높음',DA:'인수 후 지급 · 위험 있음',DP:'서류=지급 · 위험 낮음',LC:'은행 지급확약 · 낮음(서류 하자 유의)',TT_P:'선지급 · 위험 최저'};
-const LINKS=[['K-SURE 단기수출보험','미회수 위험 부보','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
+const LINKS=[['K-SURE 단기수출보험','미회수 위험 수출보험 가입','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
 const CATS=['수산식품','농식품','화장품','기계·부품','일반'];
 const CATREC={'수산식품':'<b>[통관]</b> 수산식품 — 수입국 검역·위생증명, 현지어 라벨, 유통기한·냉장/냉동 조건 사전 확인','농식품':'<b>[통관]</b> 농식품 — 잔류농약·검역 기준 및 라벨 요건 사전 확인','화장품':'<b>[통관]</b> 화장품 — 수입국 성분규제·인증(CPNP·FDA 등)·라벨 규정 사전 확인','기계·부품':'<b>[통관]</b> 기계·부품 — 안전인증(CE·UL 등)·전략물자 해당 여부·원산지(FTA) 검토','일반':''};
 
@@ -1184,7 +1184,7 @@ function renderBuyers(){
   const actv=b.deals.find(x=>x.stage<5);
   bd.innerHTML=`<h2>${esc(b.name)} <span class="pill">${esc(b.country)}</span><span class="pill">${b.cat}</span></h2>
    <label>내부 거래이력 점수 (결정론 — 당사 원장 ${b.deals.length}건 기준)</label>
-   <div class="ksbox">완료 ${b.done}건 · 회수 지연 경험 <b>${b.late}건</b>${b.late?' — 재거래 시 선수금·부보 조건 강화 검토':''}<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 (내부 데이터). 외부 지급능력 판단은 K-SURE 신용조사로 확인하세요.</div></div>
+   <div class="ksbox">완료 ${b.done}건 · 회수 지연 경험 <b>${b.late}건</b>${b.late?' — 재거래 시 선수금·수출보험 가입 조건 강화 검토':''}<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 (내부 데이터). 외부 지급능력 판단은 K-SURE 신용조사로 확인하세요.</div></div>
    <h2 style="font-size:14.5px;margin:16px 0 8px">🔍 통합 바이어 조사 패널</h2>
    <label>① 개방 데이터 자동 표시 (국가·업종 기준)</label>
    ${ksureInfoHTML(b.country,b.cat)||'<div class="mut" style="font-size:12.5px;margin-bottom:10px">국가 정보가 없습니다.</div>'}
@@ -1236,7 +1236,7 @@ function renderWizard(){
      <span class="wd">${hist?`재거래 바이어 — 원장 ${hist.n}건(지연 ${hist.late}건)`:'신규 거래처 — 내부 정보만으로 판단 불가'}<br>신용확인: ${d.credit==='NA'?'<b>미확인(조사 전)</b>':'K-SURE 조사 '+d.credit}</span>
      <button class="btn ghost sm" onclick="curBuyer='${esc(d.buyer).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">확인하기</button></div>
     <div class="wcard"><span class="wi">💳</span><span class="wt">② 결제·보험 ${badge(c2ok)}</span>
-     <span class="wd">${PAY[d.pay]} — ${noG?'<b>무담보 거래</b>':'담보성 결제'}<br>부보 검토: ${insTask?(insTask.done?'이행 완료':'미이행'):'해당 없음'} · 선수금 ${(d.sim&&d.sim.adv)||0}%</span>
+     <span class="wd">${PAY[d.pay]} — ${noG?'<b>무담보 거래</b>':'담보성 결제'}<br>수출보험 가입 검토: ${insTask?(insTask.done?'이행 완료':'미이행'):'해당 없음'} · 선수금 ${(d.sim&&d.sim.adv)||0}%</span>
      <button class="btn ghost sm" onclick="openDetail(${d.id});curTab='회수 시뮬레이터';renderDetail(${d.id})">검토하기</button></div>
     <div class="wcard"><span class="wi">📜</span><span class="wt">③ 계약 방어 ${badge(c3ok)}</span>
      <span class="wd">검사·클레임 기한: ${d.insp?'명시':'<b>미설정</b>'}<br>인코텀즈: ${d.inco||'<b>미선택</b>'}</span>
@@ -1320,7 +1320,7 @@ function renderDocs(){
    ${list.map(d=>{d.docs=d.docs||{};const slots=docSlots(d);return`<tr><td style="white-space:nowrap"><b>${esc(d.buyer)}</b><div class="mut" style="font-size:11px">${STAGES[d.stage]}${d.pay==='LC'?' · L/C':''}</div></td>
    <td>${slots.map(s=>{const st=(d.docs[s]||{}).st||0;const note=(d.docs[s]||{}).note||'';return`<span class="dslot s${st}" onclick="cycleDoc(${d.id},'${s}')" title="${esc(note)||s}">${st===2?'✓ ':st===1?'● ':''}${s}</span>`;}).join('')}
    ${!((d.docs['계약서']||{}).st)?'<div class="mut" style="font-size:11px;margin-top:4px">계약서를 등록해 주세요</div>':''}</td></tr>`;}).join('')}</tbody></table>
-   <div class="mut" style="font-size:11.5px;margin-top:8px">L/C 거래 → 선적서류 세트·환어음 추가 / 부보(이행 또는 부보율 입력) → 보험증권 추가. 서류 설명은 <span class="dc" onclick="go('docslib')">서류 라이브러리</span> 참조.</div>`
+   <div class="mut" style="font-size:11.5px;margin-top:8px">L/C 거래 → 선적서류 세트·환어음 추가 / 수출보험 가입(이행 또는 부보율 입력) → 보험증권 추가. 서류 설명은 <span class="dc" onclick="go('docslib')">서류 라이브러리</span> 참조.</div>`
    :emptyBox('📁','진행 중 거래가 없습니다.','신규 거래','openNew()');
 }
 /* 리포트 */
@@ -1338,7 +1338,7 @@ function renderInsights(){
    <div class="funnel">${STAGES.map((s,i)=>{const c=deals.filter(d=>d.stage===i).length;return`<div class="fstep" style="cursor:pointer" onclick="document.getElementById('fStage').value='${i}';go('ledger');renderLedger()"><div class="fn">${c}</div><div class="fl">${s}</div></div>`;}).join('')}</div>
    <div class="metric4">
     <div class="kpi"><div class="l">⚠ 고위험 비율 (진행 거래)</div><div class="n">${pct(hi,act)}</div><div class="mut" style="font-size:11px">${hi}/${act}건</div></div>
-    <div class="kpi"><div class="l">🛟 부보 권유 이행률</div><div class="n">${insT.length?pct(insT.filter(x=>x.done).length,insT.length):'—'}</div><div class="mut" style="font-size:11px">${insT.length?insT.filter(x=>x.done).length+'/'+insT.length+'건':'권유 대상 없음'}</div></div>
+    <div class="kpi"><div class="l">🛟 수출보험 가입 권유 이행률</div><div class="n">${insT.length?pct(insT.filter(x=>x.done).length,insT.length):'—'}</div><div class="mut" style="font-size:11px">${insT.length?insT.filter(x=>x.done).length+'/'+insT.length+'건':'권유 대상 없음'}</div></div>
     <div class="kpi"><div class="l">🔴 회수 지연 발생률</div><div class="n">${pct(lateD,dueD)}</div><div class="mut" style="font-size:11px">${lateD}/${dueD}건 (만기 보유 거래 기준)</div></div>
     <div class="kpi"><div class="l">📆 평균 회수 소요 (만기 대비)</div><div class="n">${avg===null?'—':(avg>0?'+':'')+avg+'일'}</div><div class="mut" style="font-size:11px">${avg===null?'완료·기록 데이터 부족':coll.length+'건 평균'}</div></div>
    </div>
@@ -1350,7 +1350,7 @@ function renderKsurePage(){
   document.getElementById('ksurebody').innerHTML=`
    <div class="panel"><h2>🛟 단기수출보험이란</h2><div style="font-size:13.5px;line-height:1.8">수출대금을 회수하지 못할 위험(바이어 지급불능·지급거절 등)에 대비하는 한국무역보험공사(K-SURE)의 공적 보험입니다. TRADESIGNAL은 <b>안내·권유·연결까지만</b> 제공하며, 보험 인수·보상 판단은 K-SURE가 수행합니다. <b>보험료·요율은 상담으로 확인하세요.</b></div>
    <div style="margin-top:12px;display:flex;gap:8px"><a class="btn" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 상담·신청 안내 ↗</a><a class="btn line" href="https://www.ksure.or.kr" target="_blank" rel="noopener">국가신용등급 공개표 ↗</a></div></div>
-   <div class="panel"><h2>이런 거래에 부보를 권장합니다</h2>
+   <div class="panel"><h2>이런 거래에 수출보험 가입을 권장합니다</h2>
    ${rec.length?tbl(rec)+'<div class="mut" style="font-size:12px;margin-top:8px">기준: 무담보 결제(O/A·사후T/T·D/A) 또는 $50,000 이상 또는 신규 바이어.</div>':'<div class="mut" style="font-size:13px">현재 권장 대상 거래가 없습니다.</div>'}</div>
    <div class="panel mut" style="font-size:12px">${DISCLAIMER}</div>`;
 }
@@ -1527,7 +1527,7 @@ function detailTab(d){
       <div><label>부보율 직접 입력 (%, 선택 — 아는 경우만)</label><input type="number" min="0" max="100" value="${sim.cover??''}" placeholder="미입력 시 계산 안 함" onchange="setSim(${id},'cover',this.value)"></div></div>
       <div class="riskbox ${d.level}" style="font-size:15px"><b>선수금 ${sim.adv||0}% → 위험 노출액 ${fmt(cur)}</b>
       ${covered?`<div style="margin-top:6px">입력하신 부보율 ${Number(sim.cover)}% 가정 시 노출 <b>${fmt(exposure(amt,sim.adv,sim.cover))}</b> <span class="pill">가정치</span></div>`:''}
-      <div class="mut" style="font-size:12px;margin-top:6px">부보 시 노출액은 보험 조건(부보율·자기부담)에 따라 축소됩니다 — <a href="https://www.ksure.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">K-SURE 상담으로 확인 ↗</a></div></div>
+      <div class="mut" style="font-size:12px;margin-top:6px">수출보험 가입 시 노출액은 보험 조건(부보율·자기부담)에 따라 축소됩니다 — <a href="https://www.ksure.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">K-SURE 상담으로 확인 ↗</a></div></div>
       <label>시나리오 비교 <span class="pill">추정 · 입력값 기준</span></label>
       <table style="margin-bottom:14px"><thead><tr><th>시나리오</th><th style="text-align:right">위험 노출액</th></tr></thead><tbody>
       ${rows.map(r=>`<tr><td>${r[0]}</td><td style="text-align:right;font-weight:700">${fmt(r[1])}</td></tr>`).join('')}
@@ -1572,7 +1572,7 @@ function detailTab(d){
     const n=dday(d.due);
     const payTasks=(d.tasks||[]).filter(t=>t.track==='결제'&&t.stage<=d.stage);
     return `<div class="row"><div><label>결제방식</label><div class="pill" style="font-size:13px">${PAY[d.pay]}</div><div class="mut" style="font-size:12.5px;margin-top:6px">${PAY_RISK[d.pay]}</div></div>
-      <div><label>결제 만기 / 회수 상태</label><div style="font-size:15px;font-weight:700">${d.due?esc(d.due):'미설정'} ${ddBadge(d)}</div>${d.due&&d.stage<5&&n!==null?`<div class="mut" style="font-size:12.5px;margin-top:5px">${n<0?'⚠ 만기 초과 — 회수 독촉 및 K-SURE 부보 여부 확인':n<=7?'임박 — 회수 준비':'정상'}</div>`:''}</div></div>
+      <div><label>결제 만기 / 회수 상태</label><div style="font-size:15px;font-weight:700">${d.due?esc(d.due):'미설정'} ${ddBadge(d)}</div>${d.due&&d.stage<5&&n!==null?`<div class="mut" style="font-size:12.5px;margin-top:5px">${n<0?'⚠ 만기 초과 — 회수 독촉 및 K-SURE 수출보험 가입 여부 확인':n<=7?'임박 — 회수 준비':'정상'}</div>`:''}</div></div>
       ${payTasks.length?`<label>결제 관련 할 일</label>${payTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}</div>`).join('')}`:''}
       <div class="riskbox ${d.level}" style="margin-top:10px"><b>결제 안전 권유</b><ul style="margin:8px 0 0;padding-left:18px;font-size:13px;line-height:1.7">${(d.recs||[]).filter(r=>r.includes('[결제]')).map(r=>'<li>'+r+'</li>').join('')||'<li>추가 조치 없음</li>'}</ul></div>
       <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 단기수출보험 바로가기 ↗</a>`;
