@@ -1493,7 +1493,7 @@ function detailTab(d){
     const parts=(assess(d).parts);const hist=buyerHistory(d);
     const naCnt=(d.credit==='NA'?1:0)+(!d.inco?1:0)+(!d.insp?1:0);
     const fraud=d.fraud||[];const fn=fraud.filter(Boolean).length;
-    return `<div class="riskbox ${d.level}"><b>거래 위험 참고 지표(Risk Indicator) — ${relabel(d.level)}</b> <span class="mut" style="font-size:12px">(점수 ${d.score}/100은 보조 정보)</span></div>
+    return `<div class="riskbox ${d.level}"><b>안전 신호등(거래 위험 참고 지표 · Risk Indicator) — ${relabel(d.level)}</b> <span class="mut" style="font-size:12px">(점수 ${d.score}/100은 보조 정보)</span></div>
       <label>왜 이 지표인가 — 항목별 브레이크다운</label>
       <table style="margin-bottom:6px"><thead><tr><th>구성요소</th><th style="text-align:right">가점</th></tr></thead><tbody>
       ${parts.map(p=>`<tr><td>${esc(p.k)}</td><td style="text-align:right;font-weight:700">${p.v>0?'+'+p.v:'0'}</td></tr>`).join('')}
