@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>ExportOS · 수출 거래·리스크 통합 관리</title>
+<title>TRADESIGNAL · 수출 거래·리스크 통합 관리</title>
 <style>
 :root{
  --pri:#2b4a9b;--pri-d:#1f3874;--pri-l:#eaf0fb;
@@ -260,7 +260,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 <body>
 <div class="top">
   <button class="mnb" id="mnb" onclick="document.querySelector('.side').classList.toggle('open')">☰</button>
-  <div class="brand"><span class="dot"></span>ExportOS</div>
+  <div class="brand"><span class="dot"></span>TRADESIGNAL</div>
   <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
   <button class="btn" onclick="openNew()">＋ 신규 거래</button>
@@ -422,7 +422,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
         <div id="kbout" class="mut" style="font-size:13px">카테고리·HS부호·수입국을 입력하면 해당 조합에 적용되는 통관·인증 규칙과 자동 생성될 할 일을 미리 볼 수 있습니다.</div>
       </div>
       <div class="panel"><h2>품목별 통관·인증 유의사항</h2><div id="catguide"></div></div>
-      <div class="panel"><h2>표준 수출 절차 (ExportOS가 자동 생성하는 할 일)</h2><div id="procguide"></div></div>
+      <div class="panel"><h2>표준 수출 절차 (TRADESIGNAL이 자동 생성하는 할 일)</h2><div id="procguide"></div></div>
       <div class="panel"><h2>📢 관세청·기관 공지 <span class="pill">수동 갱신 — 자동 수집 아님</span></h2><div id="notices"></div></div>
     </section>
     <!-- DATA MANAGEMENT -->
@@ -450,7 +450,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 
 <script>
 /* =====================================================================
-   ExportOS MVP — 단일 파일 · 의존성 0 · localStorage
+   TRADESIGNAL(구 ExportOS) MVP — 단일 파일 · 의존성 0 · localStorage
    구조: 상수/규칙 → 태스크 엔진 → 렌더(뷰별) → 상세 시트 → 유틸 → 시드
 ===================================================================== */
 const KEY='exportos_web_v5';
@@ -652,7 +652,7 @@ function selfTest(){
   RULES_OFF=savedOff;
   window._qa=T;
   const fail=T.filter(x=>!x.pass);
-  console[fail.length?'error':'log']('[ExportOS QA] '+(T.length-fail.length)+'/'+T.length+' 통과',T);
+  console[fail.length?'error':'log']('[TRADESIGNAL QA] '+(T.length-fail.length)+'/'+T.length+' 통과',T);
   return T;
 }
 
@@ -676,11 +676,11 @@ function toggleRule(id){const i=RULES_OFF.indexOf(id);if(i>=0)RULES_OFF.splice(i
  deals.forEach(d=>{const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);syncKbTasks(d);});render();}
 /* 진단 규칙 레지스트리 (시각화·토글용) — 출처·기준일 필수 */
 const CORE_RULES=[
- {id:'pay',name:'결제방식 기본 위험',desc:'O/A +40 · 사후T/T +35 · D/A +25 · D/P +15 · L/C +5 · 선수금 0',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
- {id:'credit',name:'신용확인 상태 가산',desc:'D +35 · C +25 · 미확인 +20 · B +8 · A 0',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
- {id:'amt',name:'거래금액 가산',desc:'$100,000 이상 +15 · $50,000 이상 +8',cat:'결제',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
- {id:'insp',name:'검사조항·클레임 기한 미설정',desc:'계약에 검사·클레임 기한이 없으면 +10',cat:'계약',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
- {id:'inco',name:'인코텀즈 미선택',desc:'위험·비용 분기점 미확정 시 +6',cat:'계약',src:'ExportOS 기본 규칙 v1, 2026-07 기준'},
+ {id:'pay',name:'결제방식 기본 위험',desc:'O/A +40 · 사후T/T +35 · D/A +25 · D/P +15 · L/C +5 · 선수금 0',cat:'결제',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
+ {id:'credit',name:'신용확인 상태 가산',desc:'D +35 · C +25 · 미확인 +20 · B +8 · A 0',cat:'결제',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
+ {id:'amt',name:'거래금액 가산',desc:'$100,000 이상 +15 · $50,000 이상 +8',cat:'결제',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
+ {id:'insp',name:'검사조항·클레임 기한 미설정',desc:'계약에 검사·클레임 기한이 없으면 +10',cat:'계약',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
+ {id:'inco',name:'인코텀즈 미선택',desc:'위험·비용 분기점 미확정 시 +6',cat:'계약',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
  {id:'fraud',name:'무역사기 패턴 대조',desc:'사기 의심 신호 체크리스트 ('+FRAUD_CHECKS.length+'문항)',cat:'사기',src:'KOTRA 무역사기 유형 기반'},
 ];
 /* 거래 정책 위반 감지 (결정론) */
@@ -1348,7 +1348,7 @@ function renderInsights(){
 function renderKsurePage(){
   const rec=deals.filter(d=>d.stage<5&&(['OA','TT_A','DA'].includes(d.pay)||d.amt>=50000||!buyerHistory(d)));
   document.getElementById('ksurebody').innerHTML=`
-   <div class="panel"><h2>🛟 단기수출보험이란</h2><div style="font-size:13.5px;line-height:1.8">수출대금을 회수하지 못할 위험(바이어 지급불능·지급거절 등)에 대비하는 한국무역보험공사(K-SURE)의 공적 보험입니다. ExportOS는 <b>안내·권유·연결까지만</b> 제공하며, 보험 인수·보상 판단은 K-SURE가 수행합니다. <b>보험료·요율은 상담으로 확인하세요.</b></div>
+   <div class="panel"><h2>🛟 단기수출보험이란</h2><div style="font-size:13.5px;line-height:1.8">수출대금을 회수하지 못할 위험(바이어 지급불능·지급거절 등)에 대비하는 한국무역보험공사(K-SURE)의 공적 보험입니다. TRADESIGNAL은 <b>안내·권유·연결까지만</b> 제공하며, 보험 인수·보상 판단은 K-SURE가 수행합니다. <b>보험료·요율은 상담으로 확인하세요.</b></div>
    <div style="margin-top:12px;display:flex;gap:8px"><a class="btn" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 상담·신청 안내 ↗</a><a class="btn line" href="https://www.ksure.or.kr" target="_blank" rel="noopener">국가신용등급 공개표 ↗</a></div></div>
    <div class="panel"><h2>이런 거래에 부보를 권장합니다</h2>
    ${rec.length?tbl(rec)+'<div class="mut" style="font-size:12px;margin-top:8px">기준: 무담보 결제(O/A·사후T/T·D/A) 또는 $50,000 이상 또는 신규 바이어.</div>':'<div class="mut" style="font-size:13px">현재 권장 대상 거래가 없습니다.</div>'}</div>
@@ -1622,7 +1622,7 @@ function copyClause(id){const t=document.getElementById('clause_'+id).textConten
 function printReport(id){const d=deals.find(x=>x.id===id);const w=window.open('','_blank');
   const openT=(d.tasks||[]).filter(t=>!t.done&&t.stage<=d.stage);
   w.document.write(`<html><head><meta charset="utf-8"><title>리스크 리포트 - ${esc(d.buyer)}</title><style>body{font-family:"Malgun Gothic";padding:34px;color:#1b2333}h1{font-size:20px}table{border-collapse:collapse;width:100%;margin:12px 0}td,th{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left}li{margin:5px 0}.mut{color:#666;font-size:12px}</style></head><body>
-   <h1>ExportOS 거래 리스크 리포트</h1><p class="mut">발행 ${now()} · 참고용(확정은 전문기관)</p>
+   <h1>TRADESIGNAL 거래 리스크 리포트</h1><p class="mut">발행 ${now()} · 참고용(확정은 전문기관)</p>
    <table><tr><th>바이어</th><td>${esc(d.buyer)}</td><th>품목</th><td>${esc(d.item)}</td></tr>
    <tr><th>수입국</th><td>${esc(d.country)}</td><th>금액</th><td>$${d.amt.toLocaleString()}</td></tr>
    <tr><th>결제방식</th><td>${PAY[d.pay]}</td><th>만기</th><td>${d.due||'-'}</td></tr>
@@ -1708,8 +1708,8 @@ render();
   let dead=false;
   try{const t=document.createElement('div');t.innerHTML='<b onclick="void 0"></b>';dead=typeof t.firstChild.onclick!=='function';}catch(e){dead=true;}
   if(!dead)return;
-  try{new Function('return 1');}catch(e){console.warn('[ExportOS] CSP가 eval도 차단 — 인라인 핸들러 우회 불가');return;}
-  const run=(el,code,e)=>{try{new Function('event',code).call(el,e);}catch(err){console.error('[ExportOS handler]',err);}};
+  try{new Function('return 1');}catch(e){console.warn('[TRADESIGNAL] CSP가 eval도 차단 — 인라인 핸들러 우회 불가');return;}
+  const run=(el,code,e)=>{try{new Function('event',code).call(el,e);}catch(err){console.error('[TRADESIGNAL handler]',err);}};
   [['click','onclick'],['input','oninput'],['change','onchange'],['keydown','onkeydown'],
    ['dragstart','ondragstart'],['dragover','ondragover'],['dragleave','ondragleave'],['drop','ondrop']].forEach(([type,attr])=>{
     document.addEventListener(type,e=>{
@@ -1721,7 +1721,7 @@ render();
       }
     },true);
   });
-  console.log('[ExportOS] 인라인 핸들러 차단 감지 — 위임 모드 활성');
+  console.log('[TRADESIGNAL] 인라인 핸들러 차단 감지 — 위임 모드 활성');
 })();
 /* 저장 불가 환경 안내 (아티팩트 등) */
 setTimeout(()=>{if(!_persist)toast('이 환경에서는 브라우저 저장이 제한됩니다 — 새로고침 시 데이터가 초기화될 수 있습니다');},900);
