@@ -284,8 +284,8 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
     <a data-v="docslib"><span class="i">📚</span> 서류 라이브러리</a>
     <a data-v="calendar"><span class="i">📅</span> 대금 일정</a>
-    <div class="grp">인사이트</div>
-    <a data-v="insights"><span class="i">📈</span> 인사이트</a>
+    <div class="grp">리포트</div>
+    <a data-v="insights"><span class="i">📈</span> 리포트</a>
     <div class="grp">연결·지원</div>
     <a data-v="ksure"><span class="i">🛟</span> 수출보험 (K-SURE)</a>
     <a data-v="partners"><span class="i">🤝</span> 무역 파트너스</a>
@@ -357,7 +357,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- INSIGHTS -->
     <section id="v-insights" class="hide">
-      <div class="phead"><div><h1>인사이트</h1><div class="d">원장 데이터의 결정론 집계입니다. 추정·예측치가 아닙니다.</div></div></div>
+      <div class="phead"><div><h1>리포트</h1><div class="d">원장 데이터의 결정론 집계입니다. 추정·예측치가 아닙니다.</div></div></div>
       <div id="insightsbody"></div>
     </section>
     <!-- KSURE PAGE -->
@@ -884,7 +884,7 @@ function doStage(d,target){
   for(let i=0;i<=target;i++)genStageTasks(d,i);
   logIt(d,`단계 이동: ${STAGES[d.stage]} → ${STAGES[target]}`);
   d.stage=target;
-  if(target===5&&!d.doneAt)d.doneAt=iso(); /* 완료일 기록 (인사이트 평균 회수 소요 계산용) */
+  if(target===5&&!d.doneAt)d.doneAt=iso(); /* 완료일 기록 (리포트 평균 회수 소요 계산용) */
   toast(`${d.buyer} → ${STAGES[target]}`);
   render();
   if(document.getElementById('mask').classList.contains('on')&&editId===d.id)renderDetail(d.id);
@@ -1323,7 +1323,7 @@ function renderDocs(){
    <div class="mut" style="font-size:11.5px;margin-top:8px">L/C 거래 → 선적서류 세트·환어음 추가 / 부보(이행 또는 부보율 입력) → 보험증권 추가. 서류 설명은 <span class="dc" onclick="go('docslib')">서류 라이브러리</span> 참조.</div>`
    :emptyBox('📁','진행 중 거래가 없습니다.','신규 거래','openNew()');
 }
-/* 인사이트 */
+/* 리포트 */
 function renderInsights(){
   const el=document.getElementById('insightsbody');
   if(!deals.length){el.innerHTML='<div class="panel">'+emptyBox('📈','분석할 데이터가 없어요.','첫 거래 등록','openNew()')+'</div>';return;}
