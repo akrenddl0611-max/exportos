@@ -1389,7 +1389,7 @@ function openSettings(welcome){
 function palActions(){return[
  {lb:'＋ 신규 거래 등록',h:'액션',run:()=>openNew()},
  {lb:'🛡 거래 안전 점검 열기',h:'액션',run:()=>go('wizard')},
- {lb:'✉ 독촉 문안 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
+ {lb:'✉ 결제 리마인드 문구 생성',h:'액션',run:()=>{const d=deals.filter(x=>x.due&&x.stage<5).sort((a,b)=>dday(a.due)-dday(b.due))[0];if(d){openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}else toast('만기 있는 진행 거래가 없습니다');}},
  {lb:'👥 바이어 검색',h:'이동',run:()=>go('buyers')},
  {lb:'📚 서류 검색 (서류 라이브러리)',h:'이동',run:()=>go('docslib')},
  {lb:'▤ 거래원장에서 검색',h:'이동',run:()=>go('ledger')},
