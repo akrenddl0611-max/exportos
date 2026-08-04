@@ -288,13 +288,16 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
   <button class="qbtn" id="qb_tasks" onclick="openQP('tasks')">☑ <span class="ql">할 일</span><span class="qn hide"></span></button>
   <button class="qbtn" id="qb_pay" onclick="openQP('pay')">⏰ <span class="ql">대금 일정</span><span class="qn hide"></span></button>
   <button class="qbtn" id="qb_docs" onclick="openQP('docs')">📁 <span class="ql">서류</span><span class="qn hide"></span></button>
+  <button class="qbtn" onclick="backupModal()" title="데이터 백업 (내보내기/가져오기)">💾</button>
   <button class="btn" onclick="openNew()">＋ 신규 거래</button>
   <div class="avatar" id="avatar" onclick="openSettings()" style="cursor:pointer" title="설정 열기">👤</div>
 </div>
 <div class="wrap">
   <aside class="side">
+    <div class="grp">핵심</div>
+    <a data-v="wizard" class="active"><span class="i">🛡</span> 거래 안전 점검</a>
     <div class="grp">업무</div>
-    <a data-v="dash" class="active"><span class="i">▦</span> 홈 피드</a>
+    <a data-v="dash"><span class="i">▦</span> 홈 피드</a>
     <a data-v="tasks"><span class="i">☑</span> 할 일 <span class="nb hide" id="taskbadge"></span></a>
     <a data-v="board"><span class="i">🗂</span> 진행 보드</a>
     <a data-v="ledger"><span class="i">▤</span> 전체 거래</a>
@@ -302,9 +305,10 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="buyers"><span class="i">👥</span> 바이어</a>
     <a data-v="credit"><span class="i">🔎</span> 바이어 확인 현황</a>
     <div class="grp">리스크</div>
-    <a data-v="wizard"><span class="i">🛡</span> 거래 안전 점검</a>
     <a data-v="rules"><span class="i">📚</span> 리스크 규칙</a>
     <a data-v="policy"><span class="i">📏</span> 거래 정책</a>
+    <a data-act="teaser-scan"><span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
+    <a data-act="teaser-connect"><span class="i">🔒</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
     <div class="grp">서류·일정</div>
     <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
     <a data-v="docslib"><span class="i">📚</span> 서류 라이브러리</a>
@@ -422,6 +426,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
           <select id="fLevel" onchange="renderLedger()"><option value="">위험 전체</option><option value="HIGH">고위험</option><option value="MED">주의</option><option value="LOW">양호</option></select>
           <select id="fStage" onchange="renderLedger()"><option value="">단계 전체</option></select>
           <select id="fCat" onchange="renderLedger()"><option value="">품목 전체</option></select>
+          <label class="chk" style="margin:0"><input type="checkbox" ${''} id="fHideSample" onchange="GUIDE.hideSample=this.checked;uiSave();render()"> 예시 숨기기</label>
           <span style="flex:1"></span>
           <button class="btn line sm" onclick="csvTemplate()">CSV 템플릿</button>
           <button class="btn line sm" onclick="document.getElementById('csvfile').click()">CSV 가져오기</button>
@@ -633,6 +638,37 @@ function ksureInfoHTML(country,cat){
   const ri=riShow.length?riShow.map(x=>`RISK INDEX [${esc(x.industry)}] <b>${esc(x.ri)}</b>${sb(x)}`).join('<br>'):'RISK INDEX(국가×업종): 해당 데이터 없음(미확인)';
   return`<div class="ksbox">${cr}<br>${oe}<br>${ri}${tag}<div class="mut" style="font-size:11px;margin-top:4px">※ 개별 바이어 신용정보는 개방 데이터에 없습니다 — K-SURE 국외기업 신용조사(신청 기반)로 확인하세요.</div></div>`;
 }
+/* =====================================================================
+   OECD 국가위험도 (0~7) — 핵심기능고도화 §0
+   출처: 한국무역보험공사_OECD 국가등급 결과 (data.go.kr, 공공데이터포털)
+   스냅숏: data/oecd_country_grade.csv (컬럼: 순번,국가명,이전평가등급,현재 등급)
+   기준일: 2021-02-04 (파일명·89차 OECD 국가위험전문가회의 결과)
+   값은 CSV 그대로 — 빈 등급 = OECD 비분류(고소득), 미수록 국가 = '미확인' (+0, 산입 안 함)
+===================================================================== */
+const OECD_META={source:'K-SURE OECD 국가등급 (data.go.kr)',dataVersion:'2021-02-04',file:'data/oecd_country_grade.csv'};
+let OECD_LIST=[]; /* {en, cur:'0'~'7'|''} — fetch 실패 시 빈 배열 = 미탑재(전 국가 미확인) */
+function oecdLoad(){
+  fetch(OECD_META.file).then(r=>{if(!r.ok)throw 0;return r.text();}).then(t=>{
+    const lines=t.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
+    OECD_LIST=lines.slice(1).map(l=>{const c=l.split(',');return{en:(c[1]||'').trim(),cur:(c[3]||'').trim()};}).filter(x=>x.en);
+    deals.forEach(d=>{const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;});
+    render();
+  }).catch(()=>{/* 미탑재 유지 — 국가 항목은 '미확인'으로 표시, 점수 0 */});
+}
+/* 한글 국가명 → CSV 영문 표기 매핑 (조회 키 번역 — 데이터 값 변경 아님) */
+const KO2EN={'미국':'United States','일본':'Japan','중국':'China (People’s Republic of)','베트남':'Viet Nam','독일':'Germany','영국':'United Kingdom','프랑스':'France','이탈리아':'Italy','스페인':'Spain','네덜란드':'Netherlands','캐나다':'Canada','호주':'Australia','뉴질랜드':'New Zealand','싱가포르':'Singapore','홍콩':'Hong Kong (China)','대만':'Chinese Taipei','태국':'Thailand','말레이시아':'Malaysia','인도네시아':'Indonesia','필리핀':'Philippines','인도':'India','파키스탄':'Pakistan','방글라데시':'Bangladesh','러시아':'Russia','브라질':'Brazil','멕시코':'Mexico','아르헨티나':'Argentina','칠레':'Chile','페루':'Peru','콜롬비아':'Colombia','UAE':'United Arab Emirates','아랍에미리트':'United Arab Emirates','사우디':'Saudi Arabia','사우디아라비아':'Saudi Arabia','카타르':'Qatar','쿠웨이트':'Kuwait','터키':'Turkey','튀르키예':'Turkey','이집트':'Egypt','나이지리아':'Nigeria','남아공':'South Africa','남아프리카공화국':'South Africa','이스라엘':'Israel','폴란드':'Poland','체코':'Czech Republic','헝가리':'Hungary','카자흐스탄':'Kazakhstan','몽골':'Mongolia','캄보디아':'Cambodia','미얀마':'Myanmar','라오스':'Lao People’s Democratic Republic','스위스':'Switzerland','한국':'Korea'};
+/* 국가 위험 조회: {g:0~7|null(비분류), st:'ok'|'nograde'} 또는 null(미확인) */
+function oecdOf(countryKo){
+  if(!OECD_LIST.length||!countryKo)return null;
+  const ko=String(countryKo).trim();
+  let en=KO2EN[ko];
+  if(!en){const hit=Object.keys(KO2EN).find(k=>ko.includes(k));en=hit?KO2EN[hit]:ko;}
+  const row=OECD_LIST.find(x=>x.en.toLowerCase()===String(en).toLowerCase());
+  if(!row)return null;
+  return row.cur===''?{g:null,st:'nograde'}:{g:Number(row.cur),st:'ok'};
+}
+const oecdTag=`${OECD_META.source}, ${OECD_META.dataVersion} 기준`;
+
 /* 내부 거래이력 (재거래 바이어 판별) — 신규 바이어의 신용을 추측하는 표현 금지 */
 function buyerHistory(d){
   const key=String(d.buyer||'').trim().toLowerCase();if(!key)return null;
@@ -677,6 +713,13 @@ function selfTest(){
   const empty={meta:{dataVersion:null},countryRatings:[],oecdGrades:[],riskIndex:[]};
   ok('T8 K-SURE 미탑재 시 조회 null(미탑재 표시)',ksureLookup('미국',empty)===null,String(ksureLookup('미국',empty)));
   ok('T9 만기 D+3 경과 → 정중 독촉(D+3) 문안 단계',currentDun(-3)==='D+3'&&!!dunText('D+3',{buyer:'X',amt:1,due:'2026-01-01'}),currentDun(-3));
+  /* T10·T11 — 국가 지표 (테스트 픽스처 주입 후 복원, 화면 표시와 무관) */
+  const savedList=OECD_LIST;OECD_LIST=[{en:'TestFourFive',cur:'4'}];KO2EN['테스트4등급국']='TestFourFive';
+  a=assess({pay:'OA',credit:'NA',amt:30000,insp:false,inco:'FOB',cat:'일반',country:'테스트4등급국'});
+  ok('T10 O/A40+미확인20+국가4등급14+조항무10+$30k(0) → 84 높음, 노출 $30,000',a.score===84&&a.level==='HIGH'&&exposure(30000,0,'')===30000,a.score+' '+a.level+' $'+exposure(30000,0,''));
+  const b1=assess({pay:'OA',credit:'NA',amt:30000,insp:false,inco:'FOB',cat:'일반',country:'미수록테스트국'});
+  ok('T11 등급 미탑재 국가 → 미확인·산입 0, 나머지 지표로만 판정',b1.score===70&&b1.parts.some(p=>p.k.includes('미확인')&&p.v===0),b1.score+' '+b1.level);
+  delete KO2EN['테스트4등급국'];OECD_LIST=savedList;
   RULES_OFF=savedOff;
   window._qa=T;
   const fail=T.filter(x=>!x.pass);
@@ -709,6 +752,7 @@ const CORE_RULES=[
  {id:'amt',name:'거래금액 가산',desc:'$100,000 이상 +15 · $50,000 이상 +8',cat:'결제',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
  {id:'insp',name:'검사조항·클레임 기한 미설정',desc:'계약에 검사·클레임 기한이 없으면 +10',cat:'계약',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
  {id:'inco',name:'인코텀즈 미선택',desc:'위험·비용 분기점 미확정 시 +6',cat:'계약',src:'TRADESIGNAL 기본 규칙 v1, 2026-07 기준'},
+ {id:'country',name:'국가 위험 (OECD 국가위험도)',desc:'6~7등급 +20 · 4~5등급 +14 · 2~3등급 +8 · 0~1등급 0 · 미확인 0(산입 안 함)',cat:'결제',src:'K-SURE OECD 국가등급 (data.go.kr), 2021-02-04 기준'},
  {id:'fraud',name:'무역사기 패턴 대조',desc:'사기 의심 신호 체크리스트 ('+FRAUD_CHECKS.length+'문항)',cat:'사기',src:'KOTRA 무역사기 유형 기반'},
 ];
 /* 거래 정책 위반 감지 (결정론) */
@@ -795,7 +839,11 @@ function assess(d){
   const p3=ruleOn('amt')?(d.amt>=100000?15:d.amt>=50000?8:0):0;s+=p3;parts.push({k:'거래금액 — $'+(d.amt||0).toLocaleString()+off('amt'),v:p3});
   const p4=ruleOn('insp')?(d.insp?0:10):0;s+=p4;parts.push({k:'검사조항·클레임 기한 — '+(d.insp?'명시':'미설정')+off('insp'),v:p4});
   const p5=ruleOn('inco')?(d.inco?0:6):0;s+=p5;parts.push({k:'인코텀즈 — '+(d.inco||'미선택')+off('inco'),v:p5});
-  s=Math.min(100,s);
+  /* ③ 국가 위험 (OECD 0~7): 6~7 +20 / 4~5 +14 / 2~3 +8 / 0~1 +0. 미확인·비분류는 산입 0 */
+  const oc=oecdOf(d.country);
+  const p6=ruleOn('country')&&oc&&oc.g!==null?(oc.g>=6?20:oc.g>=4?14:oc.g>=2?8:0):0;s+=p6;
+  parts.push({k:'국가 위험 — '+(oc?(oc.g!==null?`OECD ${oc.g}등급 (${oecdTag})`:`OECD 비분류·등급 없음 (${oecdTag})`):'미확인 (데이터에 없는 국가 — 산입 안 함)')+off('country'),v:p6,na:!oc});
+  s=Math.min(126,s);
   if(noG&&cR)recs.push('<b>[결제]</b> 미회수 위험 높음 → 선수금 30~50% 확보 또는 K-SURE 단기수출보험 부보, 가능 시 신용장 전환');
   else if(noG)recs.push('<b>[결제]</b> 무담보 거래 → K-SURE 단기수출보험 부보 검토');
   else if(d.pay==='LC')recs.push('<b>[결제]</b> 신용장 거래 → 제시 전 UCP 600·ISBP 821 서류 하자 체크리스트 확인');
@@ -982,14 +1030,14 @@ function renderKpis(){
 }
 function renderBoard(){
   document.getElementById('board').innerHTML=STAGES.map((s,ci)=>{
-    const cards=deals.filter(d=>d.stage===ci).map(cardHTML).join('');
+    const cards=deals.filter(d=>d.stage===ci&&!(GUIDE.hideSample&&d.sample)).map(cardHTML).join('');
     return `<div class="col" data-ci="${ci}" ondragover="dOver(event,${ci})" ondragleave="dLeave(${ci})" ondrop="dDrop(event,${ci})"><div class="colh"><span>${ci+1}. ${s}</span><span class="cnt">${deals.filter(d=>d.stage===ci).length}</span></div>${cards||'<div class="mut" style="font-size:11.5px;padding:6px 4px">—</div>'}</div>`;
   }).join('');
 }
 function cardHTML(d){
   const p=stageProgress(d);
   return `<div class="card ${d.level}" draggable="true" ondragstart="dStart(${d.id})" onclick="openDetail(${d.id})">
-  <div class="b">${esc(d.buyer)}</div><div class="m">${esc(d.item)} · ${esc(d.country)} · $${(d.amt||0).toLocaleString()}</div>
+  <div class="b">${esc(d.buyer)} ${d.sample?'<span class="pill" style="font-size:9.5px">예시</span>':''}</div><div class="m">${esc(d.item)} · ${esc(d.country)} · $${(d.amt||0).toLocaleString()}</div>
   <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span>${ddBadge(d)}
   ${p.total?`<div class="prog ${p.pct<100?'warn':''}"><i style="width:${p.pct}%"></i></div><div class="progl"><span>현 단계 절차</span><span>${p.done}/${p.total}</span></div>`:''}
   ${d.stage<5?`<div class="next">▶ ${esc(nextAction(d))}</div>`:''}</div>`;}
@@ -1002,10 +1050,10 @@ function renderLedger(){
   const sel=document.getElementById('fStage'); if(sel&&sel.options.length<2){sel.innerHTML='<option value="">단계 전체</option>'+STAGES.map((s,i)=>`<option value="${i}">${i+1}. ${s}</option>`).join('');}
   const cs=document.getElementById('fCat'); if(cs&&cs.options.length<2){cs.innerHTML='<option value="">품목 전체</option>'+CATS.map(c=>`<option value="${c}">${c}</option>`).join('');}
   const q=(document.getElementById('q')?.value||'').toLowerCase(),lv=document.getElementById('fLevel')?.value||'',st=document.getElementById('fStage')?.value||'',ct=document.getElementById('fCat')?.value||'';
-  const list=deals.filter(d=>(d.buyer+d.item+d.country).toLowerCase().includes(q)&&(!lv||d.level===lv)&&(st===''||d.stage==st)&&(!ct||d.cat===ct));
+  const list=deals.filter(d=>!(GUIDE.hideSample&&d.sample)&&(d.buyer+d.item+d.country).toLowerCase().includes(q)&&(!lv||d.level===lv)&&(st===''||d.stage==st)&&(!ct||d.cat===ct));
   document.getElementById('ledger').innerHTML=list.length?tbl(list):'<div class="empty">조건에 맞는 거래가 없습니다.</div>';
 }
-function tbl(list){return `<table><thead><tr><th>바이어</th><th>품목</th><th>국가</th><th>결제</th><th>금액</th><th>위험</th><th>만기</th><th>단계</th><th>절차</th></tr></thead><tbody>${list.map(d=>{const p=stageProgress(d);return `<tr class="r" onclick="openDetail(${d.id})"><td><b>${esc(d.buyer)}</b></td><td>${esc(d.item)}</td><td>${esc(d.country)}</td><td>${PAY[d.pay]}</td><td>$${(d.amt||0).toLocaleString()}</td><td><span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></td><td>${d.due?esc(d.due)+' '+ddBadge(d):'-'}</td><td>${d.stage+1}. ${STAGES[d.stage]}</td><td>${p.total?p.done+'/'+p.total:'-'}</td></tr>`;}).join('')}</tbody></table>`;}
+function tbl(list){return `<table><thead><tr><th>바이어</th><th>품목</th><th>국가</th><th>결제</th><th>금액</th><th>위험</th><th>만기</th><th>단계</th><th>절차</th></tr></thead><tbody>${list.map(d=>{const p=stageProgress(d);return `<tr class="r" onclick="openDetail(${d.id})"><td><b>${esc(d.buyer)}</b>${d.sample?' <span class="pill" style="font-size:9.5px">예시</span>':''}</td><td>${esc(d.item)}</td><td>${esc(d.country)}</td><td>${PAY[d.pay]}</td><td>$${(d.amt||0).toLocaleString()}</td><td><span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></td><td>${d.due?esc(d.due)+' '+ddBadge(d):'-'}</td><td>${d.stage+1}. ${STAGES[d.stage]}</td><td>${p.total?p.done+'/'+p.total:'-'}</td></tr>`;}).join('')}</tbody></table>`;}
 
 /* 내 할 일 뷰 */
 function renderTasks(){
@@ -1060,6 +1108,12 @@ function renderData(){
     <div style="display:flex;gap:8px"><button class="btn line sm" onclick="ksureSampleLoad();render();toast('샘플 데이터를 탑재했습니다 — 실데이터로 교체하세요')">데모용 샘플 탑재</button>
     <button class="btn line sm" onclick="if(confirm('탑재된 K-SURE 데이터를 모두 비울까요?')){ksureClear();render();}">데이터 비우기</button>
     <a class="btn ghost sm" href="https://www.data.go.kr" target="_blank" rel="noopener">data.go.kr ↗</a></div>`;
+  const hs=document.getElementById('fHideSample');if(hs)hs.checked=!!GUIDE.hideSample;
+  const st2=document.getElementById('ksstatus');
+  st2.innerHTML+=`<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px"><b>📊 수요·피드백 집계 (이 브라우저 기준, 자동 전송 없음)</b><br>
+   점검 피드백: 도움됨 ${FEEDBACK.yes} · 아니오 ${FEEDBACK.no} · 파일럿 이메일 ${FEEDBACK.emails.length}건<br>
+   확장 기능 관심: 독소조항 스캐너 클릭 ${TEASER.scan.c}·신청 ${TEASER.scan.s} / 전문가 커넥팅 클릭 ${TEASER.connect.c}·신청 ${TEASER.connect.s}<br>
+   OECD 국가위험도: ${OECD_LIST.length?OECD_LIST.length+'개국 탑재 ('+oecdTag+')':'<span class="dd over">미탑재 — data/oecd_country_grade.csv 로드 실패(직접 파일 열기 환경)</span>'}</div>`;
   const qa=window._qa||[];
   document.getElementById('qaout').innerHTML=qa.length?`<table><thead><tr><th>케이스</th><th>결과</th><th>실측값</th></tr></thead><tbody>${qa.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pass?'<span class="badge LOW">통과</span>':'<span class="badge HIGH">실패</span>'}</td><td>${esc(String(t.got))}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">테스트 미실행</div>';
 }
@@ -1241,12 +1295,45 @@ function renderCredit(){
    <td><span class="dc" onclick="curBuyer='${esc(b.name).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">상세</span></td></tr>`).join('')}</tbody></table><div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`
    :emptyBox('🔎','추적할 바이어가 없습니다.','신규 거래','openNew()');
 }
+/* 간편 점검 (5필드 — 바이어·국가·금액·결제방식·선수금) */
+let _qc=null;
+function qcRun(){
+  const t={buyer:v('qc_buyer')||'(바이어)',country:v('qc_country'),amt:Number(v('qc_amt'))||0,pay:v('qc_pay'),credit:'NA',inco:'',insp:false,cat:PROFILE.cat||'일반',item:PROFILE.item||'(품목)',sim:{adv:Number(v('qc_adv'))||0}};
+  const a=assess(t);_qc={t,a};GUIDE.diag=true;uiSave();renderWizard();
+}
+function qcSave(){
+  if(!_qc)return;
+  const t=_qc.t;const nd={id:seq++,item:t.item,cat:t.cat,buyer:t.buyer,country:t.country||'-',amt:t.amt,credit:'NA',pay:t.pay,inco:'',due:'',insp:false,newmkt:false,sim:{adv:t.sim.adv,cover:'',splits:1}};
+  const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
+  nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
+  genStageTasks(nd,0);syncRiskTasks(nd);syncKbTasks(nd);logIt(nd,'간편 점검에서 거래 등록');deals.unshift(nd);
+  _qc=null;render();openDetail(nd.id);curTab='위험 지표';renderDetail(nd.id);toast('진행 보드에 저장되었습니다 — 상세에서 조건을 보완하세요');
+}
+function qcForm(){
+  const fmt=x=>'$'+Number(x).toLocaleString();
+  return `<div class="panel" style="background:linear-gradient(180deg,#eef3fd,#fff)">
+   <h2>⚡ 간편 점검 — 3분이면 됩니다 <span class="pill">필수 5개만</span></h2>
+   <div class="row"><div><label>바이어명</label><input id="qc_buyer" placeholder="예: ABC Trading"></div>
+   <div><label>수입국</label><input id="qc_country" list="qc_countries" placeholder="예: 미국, 베트남"><datalist id="qc_countries">${Object.keys(KO2EN).map(k=>`<option value="${k}">`).join('')}</datalist></div></div>
+   <div class="row"><div><label>거래금액 (USD)</label><input id="qc_amt" type="number" placeholder="30000"></div>
+   <div><label>결제방식</label><select id="qc_pay">${opt(Object.keys(PAY),Object.values(PAY),'OA')}</select></div></div>
+   <div class="row"><div><label>선수금 비율 (%)</label><input id="qc_adv" type="number" value="0" min="0" max="100"></div>
+   <div style="display:flex;align-items:flex-end"><button class="cta" style="padding:12px" onclick="qcRun()">🛡 이 거래 점검하기</button></div></div>
+   <div class="mut" style="font-size:11.5px">인코텀즈·검사조항 등은 건너뛰어도 됩니다 — 미입력 항목은 '미확인'으로 처리됩니다.</div>
+   ${_qc?`<div class="riskbox ${_qc.a.level}" style="margin-top:12px">
+     <div style="font-size:17px;font-weight:800">이 거래에서 최대 <span style="color:var(--red)">${fmt(exposure(_qc.t.amt,_qc.t.sim.adv,''))}</span> 잃을 수 있습니다</div>
+     <div style="margin-top:4px"><span class="badge ${_qc.a.level}">${relabel(_qc.a.level)}</span> ${_qc.a.score}점 (만점 126) · 노출액 = 금액 − 선수금 ${_qc.t.sim.adv}%</div>
+     <div style="margin-top:6px;font-size:12px">${_qc.a.parts.filter(p=>p.v>0).map(p=>`+${p.v} ${esc(p.k.split(' — ')[0])}`).join(' · ')||'가점 없음'}</div>
+     <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="qcSave()">이 거래를 진행 보드에 저장</button><button class="btn line sm" onclick="_qc=null;renderWizard()">지우기</button></div>
+     <div class="mut" style="font-size:11px;margin-top:8px">${DISCLAIMER}</div></div>`:''}
+  </div>`;
+}
 /* 거래 안전 점검 마법사 */
 let wizSel=null;
 function renderWizard(){
   const actives=deals.filter(d=>d.stage<5);
   const el=document.getElementById('wizbody');
-  if(!actives.length){el.innerHTML=emptyBox('🛡','진단할 진행 중 거래가 없습니다.','신규 거래 등록','openNew()');return;}
+  if(!actives.length){el.innerHTML=qcForm()+emptyBox('🛡','저장된 진행 중 거래가 없습니다. 위 간편 점검부터 시작해 보세요.','정식 등록 폼 열기','openNew()');return;}
   if(!wizSel||!actives.some(d=>d.id===wizSel))wizSel=actives[0].id;
   const d=actives.find(x=>x.id===wizSel);
   const hist=buyerHistory(d);const noG=['OA','TT_A','DA'].includes(d.pay);
@@ -1254,7 +1341,7 @@ function renderWizard(){
   const c1ok=d.credit!=='NA'||!!hist,c2ok=!noG||(insTask&&insTask.done)||((d.sim&&Number(d.sim.adv))||0)>=30,c3ok=d.insp&&!!d.inco;
   const badge=ok=>ok?'<span class="badge LOW">양호</span>':'<span class="badge MED">조치 필요</span>';
   const pol=policyViolations(d);
-  el.innerHTML=`
+  el.innerHTML=`${qcForm()}
    <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px"><label style="margin:0">진단할 거래</label>
    <select style="width:auto" onchange="wizSel=Number(this.value);renderWizard()">${actives.map(x=>`<option value="${x.id}" ${x.id===wizSel?'selected':''}>${esc(x.buyer)} — ${esc(x.item)}</option>`).join('')}</select>
    <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></div>
@@ -1594,15 +1681,56 @@ function detailTab(d){
       <div style="margin-top:14px"><button class="btn line sm" onclick="printReport(${id})">🖨 리스크 리포트 인쇄</button></div>`;
   }
   if(curTab==='위험 지표'){
-    const parts=(assess(d).parts);const hist=buyerHistory(d);
+    const a=assess(d);const parts=a.parts;const hist=buyerHistory(d);
     const naCnt=(d.credit==='NA'?1:0)+(!d.inco?1:0)+(!d.insp?1:0);
     const fraud=d.fraud||[];const fn=fraud.filter(Boolean).length;
-    return `<div class="riskbox ${d.level}"><b>안전 신호등(거래 위험 참고 지표 · Risk Indicator) — ${relabel(d.level)}</b> <span class="mut" style="font-size:12px">(점수 ${d.score}/100은 보조 정보)</span></div>
-      <label>왜 이 지표인가 — 항목별 브레이크다운</label>
-      <table style="margin-bottom:6px"><thead><tr><th>구성요소</th><th style="text-align:right">가점</th></tr></thead><tbody>
-      ${parts.map(p=>`<tr><td>${esc(p.k)}</td><td style="text-align:right;font-weight:700">${p.v>0?'+'+p.v:'0'}</td></tr>`).join('')}
-      <tr><td><b>합계</b></td><td style="text-align:right"><b>${d.score}</b></td></tr></tbody></table>
-      ${naCnt?`<div class="mut" style="font-size:12.5px;margin-bottom:12px">미확인 항목 ${naCnt}개 — 확인(신용조사·조항·인코텀즈 확정) 시 지표 정확도가 올라갑니다.</div>`:''}
+    const adv=(d.sim&&Number(d.sim.adv))||0;
+    const expo=exposure(d.amt||0,adv,'');
+    const fmt=x=>'$'+Number(x).toLocaleString();
+    /* 지표 4그룹: 결제/40 · 바이어/35 · 국가/20 · 거래조건/31 */
+    const g1=parts[0].v,g2=parts[1].v,g6=parts[5].v,g4=parts[2].v+parts[3].v+parts[4].v;
+    const groups=[
+     {n:'결제 방식',v:g1,m:40,why:PAY_RISK[d.pay]||''},
+     {n:'바이어 이력',v:g2,m:35,why:d.credit==='NA'?(hist?'재거래 — 내부 이력 '+hist.n+'건, K-SURE 조사는 미실시':'신규·미조사 — 내부 정보로 판단 불가'):'K-SURE 조사 결과 '+d.credit},
+     {n:'국가 위험',v:g6,m:20,why:parts[5].k.replace(/^국가 위험 — /,'')},
+     {n:'거래 조건',v:g4,m:31,why:[d.amt>=100000?'고액($100k+)':d.amt>=50000?'중액($50k+)':'금액 가점 없음',d.insp?'검사조항 명시':'검사조항 없음',d.inco?('인코텀즈 '+d.inco):'인코텀즈 미정'].join(' · ')},
+    ];
+    const sumStr=groups.filter(g=>g.v>0).map(g=>g.v).join('+')||'0';
+    const gaugePos=Math.min(100,d.score/126*100);
+    const rc=window._recalc&&window._recalc.id===d.id?window._recalc:null;
+    const checks=d.checks||[];
+    const fb=FEEDBACK;
+    return `
+      <div style="font-size:21px;font-weight:800;line-height:1.35;margin-bottom:4px">이 거래에서 최대 <span style="color:var(--red)">${fmt(expo)}</span>${adv?'':' '} 잃을 수 있습니다</div>
+      <div class="mut" style="font-size:12px;margin-bottom:14px">위험 노출액 = 거래금액 ${fmt(d.amt||0)} − 선수금 ${adv}% ${adv?'('+fmt((d.amt||0)*adv/100)+')':''} · 추정(입력값 기준)</div>
+      <label>판정 — 안전 신호등(거래 위험 참고 지표 · Risk Indicator)</label>
+      <div style="position:relative;height:26px;border-radius:8px;overflow:hidden;display:flex;margin:4px 0 2px">
+        <div style="width:${29/126*100}%;background:var(--green-l)"></div><div style="width:${30/126*100}%;background:var(--amber-l)"></div><div style="flex:1;background:var(--red-l)"></div>
+        <div style="position:absolute;left:calc(${gaugePos}% - 1px);top:0;bottom:0;width:3px;background:var(--ink)"></div>
+        <div style="position:absolute;left:8px;top:4px;font-size:11px;font-weight:700;color:var(--green)">양호 0~29</div>
+        <div style="position:absolute;left:${29/126*100+3}%;top:4px;font-size:11px;font-weight:700;color:var(--amber)">주의 30~59</div>
+        <div style="position:absolute;right:8px;top:4px;font-size:11px;font-weight:700;color:var(--red)">높음 60~126</div>
+      </div>
+      <div style="font-size:14px;font-weight:800;margin-bottom:14px"><span class="badge ${d.level}">${relabel(d.level)}</span> 합산 ${sumStr} = <b>${d.score}점</b> <span class="mut" style="font-weight:400">(만점 126)</span></div>
+      <label>점수 분해 — 왜 이 점수인가</label>
+      ${groups.map(g=>`<div style="margin:7px 0 9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700"><span>${g.n}</span><span>${g.v} / ${g.m}</span></div>
+        <div style="height:9px;background:#eef1f7;border-radius:5px;overflow:hidden;margin:3px 0"><div style="width:${g.m?g.v/g.m*100:0}%;height:100%;background:${g.v>=g.m*0.7?C_RED:g.v>0?C_AMBER:C_GREEN}"></div></div>
+        <div class="mut" style="font-size:11.5px">${esc(g.why)}</div></div>`).join('')}
+      ${naCnt?`<div class="mut" style="font-size:12.5px;margin:6px 0 12px">미확인 항목 ${naCnt}개 — 확인(신용조사·조항·인코텀즈 확정) 시 지표 정확도가 올라갑니다.</div>`:''}
+      <label style="margin-top:10px">조치 — 클릭으로만 실행됩니다 (자동 실행 없음)</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 4px">
+        <span style="display:inline-flex;gap:5px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:10px;padding:5px 8px">선수금 <input type="number" id="rc_adv_${id}" value="${adv||30}" min="0" max="100" style="width:64px;padding:5px 7px">% <button class="btn sm" onclick="recalcAdv(${id})">반영해 재계산</button></span>
+        <button class="btn ghost sm" onclick="copyClauseBoth(${id})">대안 조항 복사 (국·영문)</button>
+        <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener" onclick="logIt(deals.find(x=>x.id===${id}),'K-SURE 신청 안내 링크 열람');save()">K-SURE 신청 안내 ↗</a>
+        <button class="btn ghost sm" onclick="closeSheet();go('credit')">신용조사 안내</button>
+        <button class="btn sm" style="background:var(--green)" onclick="recheck(${id})">🔄 다시 점검</button>
+      </div>
+      ${rc?`<div class="ksbox" style="border-color:#bfe2cd"><b>${rc.ps}점 → ${rc.ns}점</b> / 노출 <b>${fmt(rc.pe)} → ${fmt(rc.ne)}</b> <span class="mut" style="font-size:11px">(선수금은 노출액만 줄입니다 — 결제방식 점수는 유지)</span></div>`:''}
+      ${checks.length?`<div class="ksbox">재점검 이력: ${checks.slice(-4).map((c,i,arr)=>i===arr.length-1?`<b>현재 ${c.score}점</b>`:`${c.score}점`).join(' → ')} <span class="mut" style="font-size:11px">(${checks.length}회 점검)</span></div>`:''}
+      <div class="ksbox" style="margin-top:10px">이 점검이 도움이 됐나요?
+        <button class="btn line sm" onclick="fbVote(1)">예${fb.yes?` (${fb.yes})`:''}</button> <button class="btn line sm" onclick="fbVote(0)">아니오${fb.no?` (${fb.no})`:''}</button>
+        <span style="display:inline-flex;gap:4px;margin-left:8px"><input type="email" id="fb_mail" placeholder="파일럿 참여·소식 받기 (이메일, 선택)" style="width:220px;padding:5px 8px;font-size:12px"><button class="btn line sm" onclick="fbMail()">신청</button></span>
+        <div class="mut" style="font-size:10.5px;margin-top:4px">이 브라우저에만 저장되며 자동 전송되지 않습니다(내보내기에 포함).</div></div>
       <label>바이어 판단 근거 (내부/외부 분리)</label>
       ${hist?`<div class="ksbox">재거래 바이어 — <b>내부 거래이력</b> 기준: 당사 원장 ${hist.n}건(완료 ${hist.done}건, 회수 지연 경험 ${hist.late}건)<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 ${hist.n}건 기준 (내부 데이터)</div></div>`
       :`<div class="ksbox"><b>신규 거래처</b> — 내부 정보만으로는 상대방 실체·지급능력을 판단할 수 없습니다.<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 신청 안내 ↗</a><select style="width:auto" onchange="setCreditReq(${id},this.value)">${opt(['none','applied','received'],['신용조사 미신청','신청함(결과 대기)','결과 수신'],d.creditReq||'none')}</select></div></div>`}
@@ -1704,6 +1832,81 @@ function detailTab(d){
 function saveNotes(id){const d=deals.find(x=>x.id===id);d.notes=document.getElementById('d_notes').value;save();}
 function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];d.fraud[i]=!d.fraud[i];logIt(d,(d.fraud[i]?'사기 신호 체크: ':'사기 신호 해제: ')+FRAUD_CHECKS[i].slice(0,30));save();renderDetail(id);}
 function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
+/* ===== 핵심기능고도화: 조치 버튼·재점검·피드백·티저·백업 ===== */
+let FEEDBACK={yes:0,no:0,emails:[]};try{FEEDBACK=Object.assign(FEEDBACK,JSON.parse(sGet('exportos_feedback_v1'))||{});}catch(e){}
+let TEASER={scan:{c:0,s:0},connect:{c:0,s:0},emails:[]};try{TEASER=Object.assign(TEASER,JSON.parse(sGet('exportos_teaser_v1'))||{});}catch(e){}
+const fbSave=()=>sSet('exportos_feedback_v1',JSON.stringify(FEEDBACK));
+const tsSave=()=>sSet('exportos_teaser_v1',JSON.stringify(TEASER));
+function fbVote(y){if(y)FEEDBACK.yes++;else FEEDBACK.no++;fbSave();toast('의견이 기록되었습니다 — 감사합니다');if(editId)renderDetail(editId);}
+function fbMail(){const el=document.getElementById('fb_mail');const v=(el.value||'').trim();if(!v||!v.includes('@')){toast('이메일 형식을 확인하세요');return;}FEEDBACK.emails.push({m:v,t:now()});fbSave();el.value='';toast('신청되었습니다 (이 브라우저에 저장 — 자동 전송 없음)');}
+/* [선수금 반영해 재계산] — 노출액만 감소, 결제방식 점수 유지 (산식 그대로) */
+function recalcAdv(id){
+  const d=deals.find(x=>x.id===id);
+  const ps=d.score,pe=exposure(d.amt||0,(d.sim&&Number(d.sim.adv))||0,'');
+  const nv=Math.max(0,Math.min(100,Number(document.getElementById('rc_adv_'+id).value)||0));
+  d.sim=d.sim||{adv:0,cover:'',splits:1};d.sim.adv=nv;
+  const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);
+  window._recalc={id,ps,pe,ns:d.score,ne:exposure(d.amt||0,nv,'')};
+  logIt(d,`선수금 ${nv}% 반영 재계산 — 노출 $${window._recalc.ne.toLocaleString()}`);
+  save();render();renderDetail(id);
+}
+/* [대안 조항 복사] 국·영문 */
+function clausesEn(d){const a=[];
+ a.push('[Inspection & Claims] The Buyer shall complete inspection within 14 days of arrival and notify any defect in writing with supporting evidence. Failure to notify within this period shall be deemed acceptance of the goods.');
+ a.push('[Retention of Title] Title to the goods shall remain with the Seller until the purchase price is paid in full.');
+ if(['OA','TT_A','DA'].includes(d.pay))a.push('[Payment & Default Interest] The Seller shall commence production upon receipt of the advance payment; overdue amounts shall bear default interest.');
+ a.push('[Governing Law & Dispute Resolution] This contract shall be governed by the laws of the Republic of Korea; disputes shall be finally settled by arbitration of the KCAB (seat: Seoul).');
+ return a.join('\n\n');}
+function copyClauseBoth(id){const d=deals.find(x=>x.id===id);copyText('[국문]\n'+clauses(d)+'\n\n[English]\n'+clausesEn(d)+'\n\n※ 법적 확정은 변호사 확인 필요');logIt(d,'대안 조항 복사(국·영문)');save();toast('대안 조항(국·영문)이 복사되었습니다 — 법적 확정은 변호사 확인 필요');}
+/* [다시 점검] — 재점검 이력 저장·궤적 표시 */
+function recheck(id){
+  const d=deals.find(x=>x.id===id);
+  const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);
+  (d.checks=d.checks||[]).push({t:now(),score:d.score,level:d.level,expo:exposure(d.amt||0,(d.sim&&Number(d.sim.adv))||0,'')});
+  const prev=d.checks.length>1?d.checks[d.checks.length-2].score:null;
+  logIt(d,`다시 점검 — ${prev!==null?`이전 ${prev}점 → 현재 ${d.score}점`:`현재 ${d.score}점`}`);
+  save();render();renderDetail(id);toast(prev!==null?`이전 ${prev}점 → 현재 ${d.score}점`:`점검 완료 — ${d.score}점`);
+}
+/* 확장 잠금 티저 (§4) — 실기능 없음, 클릭·신청 수만 기록. 가격 미표기 */
+function teaserModal(key){
+  TEASER[key].c++;tsSave();
+  const info=key==='scan'?['🔬 독소조항 스캐너','계약서 텍스트에서 위험 조항(일방 해지·무제한 배상·관할 불리 등) 후보를 표시해 드립니다.','표시는 참고용이며, 법적 판단은 변호사가 수행합니다.','추가 결제 예정 기능입니다 — 출시 시 알려드릴까요?']
+   :['🤝 전문가 커넥팅','관세사·변호사·무역실무 전문가에게 이 거래 맥락 그대로 상담을 연결합니다.','연결·중개까지만 제공하며, 자문 계약은 당사자 간 체결합니다.','추가 결제 예정 기능입니다 — 출시 시 알려드릴까요?'];
+  const g=document.getElementById('gate');
+  g.innerHTML=`<div class="gbox"><h3>${info[0]} <span class="dd soon">추가 결제 예정</span></h3>
+   <div style="font-size:13px;line-height:1.8;color:#444">${info[1]}<br>${info[2]}<br><b>${info[3]}</b></div>
+   <div style="display:flex;gap:6px;margin-top:12px"><input type="email" id="ts_mail" placeholder="이메일 (선택)" style="flex:1"><button class="btn sm" onclick="teaserSignup('${key}')">출시 알림 받기</button></div>
+   <div class="mut" style="font-size:10.5px;margin-top:6px">이 브라우저에만 저장됩니다(자동 전송 없음). 실제 기능은 아직 제공되지 않습니다.</div>
+   <div style="display:flex;justify-content:flex-end;margin-top:8px"><button class="btn line sm" onclick="closeGate()">닫기</button></div></div>`;
+  g.classList.add('on');
+}
+function teaserSignup(key){const el=document.getElementById('ts_mail');const v=(el.value||'').trim();TEASER[key].s++;if(v&&v.includes('@'))TEASER.emails.push({k:key,m:v,t:now()});tsSave();closeGate();toast('알림 신청이 기록되었습니다 — 감사합니다');}
+/* 백업 (§5): 내보내기/가져오기 — 상단 버튼 */
+function backupModal(){
+  const g=document.getElementById('gate');
+  g.innerHTML=`<div class="gbox"><h3>💾 데이터 백업</h3>
+   <div class="mut" style="font-size:12.5px;line-height:1.7">데이터는 이 브라우저에만 저장됩니다. 기기 변경·삭제에 대비해 주기적으로 내보내기 하세요.</div>
+   <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn sm" onclick="exportJSON()">JSON 내보내기</button>
+   <button class="btn line sm" onclick="document.getElementById('jsonfile').click()">JSON 가져오기</button>
+   <input type="file" id="jsonfile" accept=".json" class="hide" onchange="importJSON(this)">
+   <button class="btn line sm" onclick="closeGate();go('ledger')">CSV는 전체 거래 화면에서</button></div>
+   <div style="display:flex;justify-content:flex-end;margin-top:10px"><button class="btn line sm" onclick="closeGate()">닫기</button></div></div>`;
+  g.classList.add('on');
+}
+function importJSON(inp){
+  const f=inp.files[0];if(!f)return;const r=new FileReader();
+  r.onload=()=>{try{
+    const j=JSON.parse(r.result);
+    const arr=Array.isArray(j)?j:(j.deals||[]);
+    if(!Array.isArray(arr)||!arr.length){toast('가져올 거래가 없습니다');return;}
+    if(!confirm(`${arr.length}건을 가져와 현재 목록에 추가할까요?`))return;
+    arr.forEach(d=>{d.id=seq++;deals.push(d);});
+    if(!Array.isArray(j)){if(j.feedback)FEEDBACK=Object.assign(FEEDBACK,j.feedback);if(j.teaser)TEASER=Object.assign(TEASER,j.teaser);fbSave();tsSave();}
+    inp.value='';closeGate();render();toast(arr.length+'건을 가져왔습니다');
+  }catch(e){toast('JSON 파싱 실패 — 파일을 확인하세요');}};
+  r.readAsText(f,'utf-8');
+}
+
 /* 수출신고 수리일 → 적재 기한(+30일) D-day 태스크 등록 */
 function setCleared(id,val){
   const d=deals.find(x=>x.id===id);if(!val)return;
@@ -1771,12 +1974,17 @@ function closeSheet(){document.getElementById('mask').classList.remove('on');}
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
 const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','docslib','calendar','insights','ksure','partners'];
 function go(v){VIEWS.forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
-document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;if(a.dataset.v)go(a.dataset.v);else if(a.dataset.act==='settings')openSettings();document.querySelector('.side').classList.remove('open');});
+document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;
+ if(a.dataset.v)go(a.dataset.v);
+ else if(a.dataset.act==='settings')openSettings();
+ else if(a.dataset.act==='teaser-scan')teaserModal('scan');
+ else if(a.dataset.act==='teaser-connect')teaserModal('connect');
+ document.querySelector('.side').classList.remove('open');});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
 const v=id=>document.getElementById(id).value.trim();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function opt(vals,labels,sel){return vals.map((x,i)=>`<option value="${x}" ${x===sel?'selected':''}>${labels[i]}</option>`).join('');}
-function exportJSON(){const b=new Blob([JSON.stringify(deals,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료');}
+function exportJSON(){const b=new Blob([JSON.stringify({deals,seq,feedback:FEEDBACK,teaser:TEASER},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료 — 안전한 곳에 보관하세요');}
 
 /* ---------- 시드 ---------- */
 function seedData(){
@@ -1786,7 +1994,7 @@ function seedData(){
    ['자동차 부품 (8708.99)','기계·부품','Hanoi Auto Parts','베트남',120000,'B','DA','FOB',false,false,3,fmt(18),0.7],
    ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'A','LC','CFR',true,false,1,fmt(30),0.85]]
   .forEach(a=>{
-    const d={id:seq++,item:a[0],cat:a[1],buyer:a[2],country:a[3],amt:a[4],credit:a[5],pay:a[6],inco:a[7],insp:a[8],newmkt:a[9],due:a[11]};
+    const d={id:seq++,item:a[0],cat:a[1],buyer:a[2],country:a[3],amt:a[4],credit:a[5],pay:a[6],inco:a[7],insp:a[8],newmkt:a[9],due:a[11],sample:true};
     const r=assess(d);d.score=r.score;d.level=r.level;d.recs=r.recs;
     d.stage=0;d.tasks=[];d.tseq=0;d.genStages=[];d.notes='';d.log=[{t:now(),msg:'거래 등록(샘플)'}];
     for(let i=0;i<=a[10];i++)genStageTasks(d,i);d.stage=a[10];
@@ -1796,7 +2004,7 @@ function seedData(){
   });
 }
 function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
-uiLoad();ksureLoad();
+uiLoad();ksureLoad();oecdLoad();
 load();if(!deals.length)seedData();
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
 /* 구버전 서류함(숫자 키) → 이름 키 마이그레이션 */
@@ -1831,6 +2039,10 @@ render();
 setTimeout(()=>{if(!_persist)toast('이 환경에서는 브라우저 저장이 제한됩니다 — 새로고침 시 데이터가 초기화될 수 있습니다');},900);
 /* 최초 접속 온보딩: 프로필 미설정 시 1회 안내 */
 if(!PROFILE.name&&!GUIDE.onboard){GUIDE.onboard=true;uiSave();setTimeout(()=>openSettings(true),500);}
+/* 기본 화면 = 거래 안전 점검 (핵심 전면) */
+go('wizard');
+/* 백업 1회 고지 (§5) */
+if(!GUIDE.backupNote){GUIDE.backupNote=true;uiSave();setTimeout(()=>toast('데이터는 이 브라우저에만 저장됩니다 — 상단 💾 버튼으로 백업하세요'),2600);}
 </script>
 </body>
 </html>
