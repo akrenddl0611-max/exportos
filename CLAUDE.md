@@ -88,3 +88,10 @@ ExportOS는 수출 중소기업(전남 김·수산, 무역 전담 인력 0~1명�
 
 ## 실행
 브라우저에서 index.html 열기(빌드·서버 불필요). 데이터 초기화는 사이드바 하단 참고(localStorage 키 삭제).
+
+## 핵심기능 고도화 (INSTRUCTION_핵심기능고도화.md 구현)
+- **OECD 국가위험도 실데이터**: data/oecd_country_grade.csv (data.go.kr K-SURE OECD 국가등급, 201개국, 기준 2021-02-04). oecdLoad()가 fetch — file:// 직접 열기 환경은 미탑재(미확인 표시). KO2EN 한→영 매핑으로 조회. 국가 지표: 6~7 +20/4~5 +14/2~3 +8, 비분류·미확인 산입 0. 만점 126, 판정 구간 유지. 테스트 T10(84·높음·$30k)/T11 추가 — 픽스처 주입·복원 방식
+- **결과 화면(위험 지표 탭)**: 노출액 헤드라인 → 판정 게이지(0~126) → 점수 분해 4그룹(결제40/바이어35/국가20/거래조건31, 근거 병기) → 조치 버튼(선수금 재계산 recalcAdv·조항 국영문 copyClauseBoth·K-SURE·신용조사·다시 점검 recheck→d.checks 이력) → 피드백(FEEDBACK, exportos_feedback_v1)
+- **간편 점검(qcForm, wizard 상단)**: 5필드(바이어·국가 datalist·금액·결제·선수금)→qcRun 임시 점검→qcSave로 진행 보드 저장. 기본 화면 = wizard(핵심 전면, 사이드바 최상단 '핵심' 그룹)
+- **확장 잠금 티저**: 독소조항 스캐너·전문가 커넥팅(실기능 없음) — teaserModal 클릭·신청 카운터(TEASER, exportos_teaser_v1), 가격 미표기
+- **백업**: 헤더 💾 backupModal(JSON 내보내기/가져오기 importJSON — 배열·객체 형식 모두 수용), exportJSON에 feedback·teaser 포함, 1회 백업 고지. 시드 sample:true → '예시' 뱃지 + 숨김 토글(GUIDE.hideSample)
