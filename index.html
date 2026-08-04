@@ -1002,22 +1002,27 @@ function renderBadge(){
   b.classList.toggle('hide',!n);b.textContent=n;
   document.getElementById('avatar').textContent=PROFILE.name?PROFILE.name.trim()[0]:'👤';
 }
+/* Deel식 "행동 필요" 인박스 — 조치가 필요한 항목만 위로, 각 항목에 실행 버튼 하나.
+   전부 원장·할일·서류의 결정론 집계이며, 버튼은 기존 화면·함수로 이동만 한다 */
+function actionItems(){
+  const out=[];
+  deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<0).forEach(d=>out.push({ic:'🔴',tx:`${d.buyer} — 만기 ${-dday(d.due)}일 경과, 미회수 $${(d.amt||0).toLocaleString()}`,btn:'리마인드 보내기',run:()=>{openDetail(d.id);curTab='회수 시뮬레이터';renderDetail(d.id);}}));
+  allTasks().filter(x=>!x.t.done&&x.t.req&&x.t.due&&dday(x.t.due)<0).slice(0,3).forEach(({d,t})=>out.push({ic:'⏰',tx:`${d.buyer} — 필수 절차 지연: ${t.title.slice(0,34)}`,btn:'절차 열기',run:()=>{openDetail(d.id);curTab='절차·할 일';renderDetail(d.id);}}));
+  deals.filter(d=>d.stage>=1&&d.stage<5&&!((d.docs||{})['계약서']||{}).st).slice(0,2).forEach(d=>out.push({ic:'📄',tx:`${d.buyer} — 계약서 미등록`,btn:'등록',run:()=>{openDetail(d.id);curTab='서류·통관';renderDetail(d.id);}}));
+  buyerList().filter(b=>b.credit==='NA'&&b.req==='none'&&b.deals.some(x=>x.stage<5&&x.level==='HIGH')).slice(0,2).forEach(b=>out.push({ic:'🔍',tx:`신규 바이어 ${b.name} — 신용조사 미신청`,btn:'신청 안내',run:()=>{curBuyer=b.name;go('buyers');renderBuyers();}}));
+  deals.filter(d=>d.stage<5&&policyViolations(d).length).slice(0,2).forEach(d=>out.push({ic:'📏',tx:`${d.buyer} — 거래 정책 위반 ${policyViolations(d).length}건`,btn:'확인',run:()=>openDetail(d.id)}));
+  return out;
+}
 function renderToday(){
   const s=taskStats();
-  const overDeal=deals.filter(d=>d.due&&d.stage<5&&dday(d.due)<0);
-  const risky=deals.filter(d=>d.level==='HIGH'&&d.stage<5&&(d.tasks||[]).some(t=>t.src==='risk'&&!t.done));
-  const rows=[
-   ['🔴',`기한 지난 할 일 — 즉시 처리`,s.over.length,()=>goTasks()],
-   ['📌',`7일 내 마감 할 일`,s.today.length,()=>goTasks()],
-   ['⏰',`회수 지연 거래 — 독촉·수출보험 확인`,overDeal.length,()=>overDeal.length&&openDetail(overDeal[0].id)],
-   ['⚠️',`고위험·위험조치 미이행 거래`,risky.length,()=>risky.length&&openDetail(risky[0].id)],
-  ].filter(r=>r[2]>0);
-  const total=rows.reduce((a,r)=>a+r[2],0);
+  const acts=actionItems();
   const hr=new Date().getHours();const gr=hr<11?'좋은 아침입니다':hr<18?'안녕하세요':'수고 많으셨습니다';
-  window._heroActs=rows.map(r=>r[3]);
+  window._actRuns=acts.map(a=>a.run);
   document.getElementById('today').innerHTML=`<div class="hi">👋 ${PROFILE.name?esc(PROFILE.name):'사용자'}님, ${gr}</div>
-    <div class="hs">오늘 확인이 필요한 업무 <b style="color:var(--pri-d)">${total}건</b>${total?' — 아래에서 바로 처리하세요.':''}</div>
-    ${rows.length?`<div class="todo">${rows.map((r,i)=>`<div class="ti" onclick="_heroActs[${i}]()"><span class="ic">${r[0]}</span><span class="tx">${r[1]}</span><span class="cn">${r[2]}건</span><span class="ar">→</span></div>`).join('')}</div>`:`<div class="mut" style="margin-top:10px">지금 급히 처리할 업무가 없습니다. 👍</div>`}`;
+    <div class="hs">행동 필요 <b style="color:var(--red)">${acts.length}건</b>${s.today.length?` · 오늘 마감 할 일 ${s.today.length}건`:''}</div>
+    ${acts.length?`<div class="todo">${acts.slice(0,6).map((a,i)=>`<div class="ti" style="cursor:default"><span class="ic">${a.ic}</span><span class="tx">${esc(a.tx)}</span><button class="btn ghost sm" onclick="_actRuns[${i}]()">${a.btn}</button></div>`).join('')}
+      ${acts.length>6?`<div class="mut" style="font-size:12px;text-align:center">외 ${acts.length-6}건 — <span class="dc" onclick="goTasks()">할 일에서 보기</span></div>`:''}</div>`
+    :`<div class="mut" style="margin-top:10px">지금 조치가 필요한 항목이 없습니다. 👍 완료·예정 업무는 아래와 할 일 화면에서 확인하세요.</div>`}`;
 }
 function goTasks(){go('tasks');}
 function renderKpis(){
@@ -1034,12 +1039,19 @@ function renderBoard(){
     return `<div class="col" data-ci="${ci}" ondragover="dOver(event,${ci})" ondragleave="dLeave(${ci})" ondrop="dDrop(event,${ci})"><div class="colh"><span>${ci+1}. ${s}</span><span class="cnt">${deals.filter(d=>d.stage===ci).length}</span></div>${cards||'<div class="mut" style="font-size:11.5px;padding:6px 4px">—</div>'}</div>`;
   }).join('');
 }
+/* Flexport식 타임라인 카드 — "이 거래가 지금 어디쯤"을 가로 단계 바로 표시 */
 function cardHTML(d){
   const p=stageProgress(d);
+  const tl=STAGES.map((s,i)=>{
+    const bg=i<d.stage?C_GREEN:i===d.stage?'var(--pri)':'#e3e6ef';
+    return `<div style="flex:1" title="${i+1}. ${s}"><div style="height:5px;border-radius:3px;background:${bg}"></div></div>`;
+  }).join('');
   return `<div class="card ${d.level}" draggable="true" ondragstart="dStart(${d.id})" onclick="openDetail(${d.id})">
-  <div class="b">${esc(d.buyer)} ${d.sample?'<span class="pill" style="font-size:9.5px">예시</span>':''}</div><div class="m">${esc(d.item)} · ${esc(d.country)} · $${(d.amt||0).toLocaleString()}</div>
+  <div class="b">${esc(d.buyer)} ${d.sample?'<span class="pill" style="font-size:9.5px">예시</span>':''}</div>
+  <div class="m">$${(d.amt||0).toLocaleString()} · ${esc(d.country)}</div>
   <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span>${ddBadge(d)}
-  ${p.total?`<div class="prog ${p.pct<100?'warn':''}"><i style="width:${p.pct}%"></i></div><div class="progl"><span>현 단계 절차</span><span>${p.done}/${p.total}</span></div>`:''}
+  <div style="display:flex;gap:3px;margin-top:9px">${tl}</div>
+  <div class="progl"><span style="color:var(--pri-d);font-weight:700">${STAGES[d.stage]}</span><span>${p.total?'절차 '+p.done+'/'+p.total:''}</span></div>
   ${d.stage<5?`<div class="next">▶ ${esc(nextAction(d))}</div>`:''}</div>`;}
 function renderDue(){
   const list=deals.filter(d=>d.due&&d.stage<5).map(d=>({d,n:dday(d.due)})).filter(x=>x.n<=14).sort((a,b)=>a.n-b.n);
