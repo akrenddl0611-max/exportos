@@ -674,7 +674,7 @@ function oecdOf(countryKo){
   if(!row)return null;
   return row.cur===''?{g:null,st:'nograde'}:{g:Number(row.cur),st:'ok'};
 }
-const oecdTag=()=>`${OECD_META.source}, ${OECD_META.dataVersion} 기준${OECD_META.auto?' · 자동 갱신(매월 1·15일)':''}`;
+const oecdTag=()=>`${OECD_META.source}, ${OECD_META.dataVersion} 기준${OECD_META.fetchedAt?' · 최신본 확인 '+String(OECD_META.fetchedAt).slice(0,10):''}`;
 
 /* 내부 거래이력 (재거래 바이어 판별) — 신규 바이어의 신용을 추측하는 표현 금지 */
 function buyerHistory(d){
