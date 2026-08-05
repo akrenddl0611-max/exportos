@@ -294,7 +294,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 </div>
 <div class="wrap">
   <aside class="side">
-    <div class="grp">핵심</div>
+    <div class="grp">안전</div>
     <a data-v="wizard" class="active"><span class="i">🛡</span> 거래 안전 점검</a>
     <div class="grp">업무</div>
     <a data-v="dash"><span class="i">▦</span> 홈 피드</a>
@@ -645,9 +645,16 @@ function ksureInfoHTML(country,cat){
    기준일: 2021-02-04 (파일명·89차 OECD 국가위험전문가회의 결과)
    값은 CSV 그대로 — 빈 등급 = OECD 비분류(고소득), 미수록 국가 = '미확인' (+0, 산입 안 함)
 ===================================================================== */
-const OECD_META={source:'K-SURE OECD 국가등급 (data.go.kr)',dataVersion:'2021-02-04',file:'data/oecd_country_grade.csv'};
+const OECD_META={source:'K-SURE OECD 국가등급 (data.go.kr)',dataVersion:'2021-02-04',fetchedAt:null,auto:false,file:'data/oecd_country_grade.csv'};
 let OECD_LIST=[]; /* {en, cur:'0'~'7'|''} — fetch 실패 시 빈 배열 = 미탑재(전 국가 미확인) */
+/* 데이터 노후 판정(결정론): 기준일로부터 365일 경과 시 갱신 권장 배지 */
+function oecdStale(){const dv=OECD_META.dataVersion;if(!dv||!/^\d{4}-\d{2}/.test(dv))return false;return (Date.now()-new Date(dv))/86400000>=365;}
+const oecdStaleBadge=()=>oecdStale()?' <span class="dd soon">⚠ 데이터 갱신 권장(1년 경과)</span>':'';
 function oecdLoad(){
+  /* 기준일은 동반 메타 파일(data/oecd_meta.json — 갱신 워크플로가 기록)에서 읽고, 실패 시 스냅숏 기준일 유지 */
+  fetch('data/oecd_meta.json').then(r=>r.ok?r.json():null).then(m=>{
+    if(m&&m.dataVersion){OECD_META.dataVersion=m.dataVersion;OECD_META.fetchedAt=m.fetchedAt||null;OECD_META.auto=!!m.fetchedAt;render();}
+  }).catch(()=>{});
   fetch(OECD_META.file).then(r=>{if(!r.ok)throw 0;return r.text();}).then(t=>{
     const lines=t.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
     OECD_LIST=lines.slice(1).map(l=>{const c=l.split(',');return{en:(c[1]||'').trim(),cur:(c[3]||'').trim()};}).filter(x=>x.en);
@@ -667,7 +674,7 @@ function oecdOf(countryKo){
   if(!row)return null;
   return row.cur===''?{g:null,st:'nograde'}:{g:Number(row.cur),st:'ok'};
 }
-const oecdTag=`${OECD_META.source}, ${OECD_META.dataVersion} 기준`;
+const oecdTag=()=>`${OECD_META.source}, ${OECD_META.dataVersion} 기준${OECD_META.auto?' · 자동 갱신(매월 1·15일)':''}`;
 
 /* 내부 거래이력 (재거래 바이어 판별) — 신규 바이어의 신용을 추측하는 표현 금지 */
 function buyerHistory(d){
@@ -842,7 +849,7 @@ function assess(d){
   /* ③ 국가 위험 (OECD 0~7): 6~7 +20 / 4~5 +14 / 2~3 +8 / 0~1 +0. 미확인·비분류는 산입 0 */
   const oc=oecdOf(d.country);
   const p6=ruleOn('country')&&oc&&oc.g!==null?(oc.g>=6?20:oc.g>=4?14:oc.g>=2?8:0):0;s+=p6;
-  parts.push({k:'국가 위험 — '+(oc?(oc.g!==null?`OECD ${oc.g}등급 (${oecdTag})`:`OECD 비분류·등급 없음 (${oecdTag})`):'미확인 (데이터에 없는 국가 — 산입 안 함)')+off('country'),v:p6,na:!oc});
+  parts.push({k:'국가 위험 — '+(oc?(oc.g!==null?`OECD ${oc.g}등급 (${oecdTag()})`:`OECD 비분류·등급 없음 (${oecdTag()})`):'미확인 (데이터에 없는 국가 — 산입 안 함)')+off('country'),v:p6,na:!oc});
   s=Math.min(126,s);
   if(noG&&cR)recs.push('<b>[결제]</b> 미회수 위험 높음 → 선수금 30~50% 확보 또는 K-SURE 단기수출보험 부보, 가능 시 신용장 전환');
   else if(noG)recs.push('<b>[결제]</b> 무담보 거래 → K-SURE 단기수출보험 부보 검토');
@@ -1125,7 +1132,7 @@ function renderData(){
   st2.innerHTML+=`<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px"><b>📊 수요·피드백 집계 (이 브라우저 기준, 자동 전송 없음)</b><br>
    점검 피드백: 도움됨 ${FEEDBACK.yes} · 아니오 ${FEEDBACK.no} · 파일럿 이메일 ${FEEDBACK.emails.length}건<br>
    확장 기능 관심: 독소조항 스캐너 클릭 ${TEASER.scan.c}·신청 ${TEASER.scan.s} / 전문가 커넥팅 클릭 ${TEASER.connect.c}·신청 ${TEASER.connect.s}<br>
-   OECD 국가위험도: ${OECD_LIST.length?OECD_LIST.length+'개국 탑재 ('+oecdTag+')':'<span class="dd over">미탑재 — data/oecd_country_grade.csv 로드 실패(직접 파일 열기 환경)</span>'}</div>`;
+   OECD 국가위험도: ${OECD_LIST.length?OECD_LIST.length+'개국 탑재 ('+oecdTag()+')'+oecdStaleBadge():'<span class="dd over">미탑재 — data/oecd_country_grade.csv 로드 실패(직접 파일 열기 환경)</span>'}</div>`;
   const qa=window._qa||[];
   document.getElementById('qaout').innerHTML=qa.length?`<table><thead><tr><th>케이스</th><th>결과</th><th>실측값</th></tr></thead><tbody>${qa.map(t=>`<tr><td>${esc(t.name)}</td><td>${t.pass?'<span class="badge LOW">통과</span>':'<span class="badge HIGH">실패</span>'}</td><td>${esc(String(t.got))}</td></tr>`).join('')}</tbody></table>`:'<div class="empty">테스트 미실행</div>';
 }
@@ -1684,7 +1691,7 @@ function detailTab(d){
     const p=stageProgress(d);
     const riskTasks=(d.tasks||[]).filter(t=>t.src==='risk');
     return `${policyViolations(d).map(v=>`<div class="warnbar">⚠ 거래 정책 위반: ${v} <span class="dc" style="float:right" onclick="go('policy');closeSheet()">정책 보기</span></div>`).join('')}
-      <div class="riskbox ${d.level}"><b>결제·계약 위험 ${d.score}/100 · ${relabel(d.level)}</b><div class="mut" style="font-size:12.5px;margin-top:4px">${PAY_RISK[d.pay]}</div></div>
+      <div class="riskbox ${d.level}"><b>결제 안전 점검 ${d.score}점 (만점 126) · ${relabel(d.level)}</b><div class="mut" style="font-size:12.5px;margin-top:4px">${PAY_RISK[d.pay]}</div></div>
       <label>진행 단계 (클릭으로 이동 — 필수 절차 미완료 시 확인 요청)</label>${stepperHTML(d)}
       ${p.total?`<label>현 단계(${STAGES[d.stage]}) 절차 진행률</label><div class="prog ${p.pct<100?'warn':''}" style="height:8px;margin:2px 0 4px"><i style="width:${p.pct}%"></i></div><div class="progl"><span></span><span>${p.done}/${p.total} 완료</span></div>`:''}
       <label style="margin-top:14px">위험조치 권장 (이행 시 체크)</label>
@@ -1704,7 +1711,7 @@ function detailTab(d){
     const groups=[
      {n:'결제 방식',v:g1,m:40,why:PAY_RISK[d.pay]||''},
      {n:'바이어 이력',v:g2,m:35,why:d.credit==='NA'?(hist?'재거래 — 내부 이력 '+hist.n+'건, K-SURE 조사는 미실시':'신규·미조사 — 내부 정보로 판단 불가'):'K-SURE 조사 결과 '+d.credit},
-     {n:'국가 위험',v:g6,m:20,why:parts[5].k.replace(/^국가 위험 — /,'')},
+     {n:'국가 위험',v:g6,m:20,why:parts[5].k.replace(/^국가 위험 — /,''),badge:oecdStaleBadge()},
      {n:'거래 조건',v:g4,m:31,why:[d.amt>=100000?'고액($100k+)':d.amt>=50000?'중액($50k+)':'금액 가점 없음',d.insp?'검사조항 명시':'검사조항 없음',d.inco?('인코텀즈 '+d.inco):'인코텀즈 미정'].join(' · ')},
     ];
     const sumStr=groups.filter(g=>g.v>0).map(g=>g.v).join('+')||'0';
@@ -1727,7 +1734,7 @@ function detailTab(d){
       <label>점수 분해 — 왜 이 점수인가</label>
       ${groups.map(g=>`<div style="margin:7px 0 9px"><div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700"><span>${g.n}</span><span>${g.v} / ${g.m}</span></div>
         <div style="height:9px;background:#eef1f7;border-radius:5px;overflow:hidden;margin:3px 0"><div style="width:${g.m?g.v/g.m*100:0}%;height:100%;background:${g.v>=g.m*0.7?C_RED:g.v>0?C_AMBER:C_GREEN}"></div></div>
-        <div class="mut" style="font-size:11.5px">${esc(g.why)}</div></div>`).join('')}
+        <div class="mut" style="font-size:11.5px">${esc(g.why)}${g.badge||''}</div></div>`).join('')}
       ${naCnt?`<div class="mut" style="font-size:12.5px;margin:6px 0 12px">미확인 항목 ${naCnt}개 — 확인(신용조사·조항·인코텀즈 확정) 시 지표 정확도가 올라갑니다.</div>`:''}
       <label style="margin-top:10px">조치 — 클릭으로만 실행됩니다 (자동 실행 없음)</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0 4px">
@@ -1945,7 +1952,7 @@ function printReport(id){const d=deals.find(x=>x.id===id);const w=window.open(''
    <table><tr><th>바이어</th><td>${esc(d.buyer)}</td><th>품목</th><td>${esc(d.item)}</td></tr>
    <tr><th>수입국</th><td>${esc(d.country)}</td><th>금액</th><td>$${d.amt.toLocaleString()}</td></tr>
    <tr><th>결제방식</th><td>${PAY[d.pay]}</td><th>만기</th><td>${d.due||'-'}</td></tr>
-   <tr><th>진행 단계</th><td>${d.stage+1}. ${STAGES[d.stage]}</td><th>위험 점수</th><td><b>${d.score}/100 (${relabel(d.level)})</b></td></tr></table>
+   <tr><th>진행 단계</th><td>${d.stage+1}. ${STAGES[d.stage]}</td><th>위험 점수</th><td><b>${d.score}점 / 126 (${relabel(d.level)})</b></td></tr></table>
    <h3>권장 조치</h3><ul>${(d.recs||[]).map(r=>'<li>'+r.replace(/<[^>]+>/g,'')+'</li>').join('')}</ul>
    <h3>미완료 절차 (${openT.length})</h3><ul>${openT.map(t=>`<li>[${STAGES[t.stage]}·${t.track}] ${esc(t.title)}${t.due?' — 마감 '+t.due:''}</li>`).join('')||'<li>없음</li>'}</ul>
    <h3>리스크관리 계약 조항(참고)</h3><pre style="white-space:pre-wrap;font-size:12.5px;background:#f6f7fb;padding:12px;border-radius:8px">${esc(clauses(d))}</pre>

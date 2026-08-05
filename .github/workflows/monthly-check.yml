@@ -1,0 +1,35 @@
+name: monthly-check
+
+on:
+  schedule:
+    - cron: '0 1 1 * *'   # 매월 1일 01:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-checklist-issue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create monthly data check issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const ym = new Date().toISOString().slice(0,7);
+            const body = [
+              '월간 데이터·규정 점검 체크리스트입니다. 완료 후 이슈를 닫아 주세요.',
+              '',
+              '- [ ] OECD·국가신용등급 최신본 확인 (data-refresh 워크플로 실패 여부 포함)',
+              '- [ ] 관세청·기관 공지 확인 → 앱 [자료·가이드 > 공지]에 수동 등록',
+              '- [ ] KB_RULES(품목×수입국 규칙) 유효성 확인 — 변경된 규제 반영',
+              '- [ ] 리스크 규칙 출처·기준일 갱신 필요 여부',
+              '',
+              '※ 법·규제 데이터는 수동 갱신 원칙(앱 내 "수동 갱신 — 자동 수집 아님" 표기 유지). 자동화 대상은 OECD 등 구조화 데이터뿐입니다.'
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `📋 월간 데이터 점검 (${ym})`,
+              body
+            });
