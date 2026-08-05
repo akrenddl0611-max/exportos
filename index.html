@@ -282,7 +282,8 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
 <body>
 <div class="top">
   <button class="mnb" id="mnb" onclick="document.querySelector('.side').classList.toggle('open')">☰</button>
-  <div class="brand"><span class="dot"></span>TRADESIGNAL</div>
+  <div class="brand" onclick="brandClick()" style="cursor:default"><span class="dot"></span>TRADESIGNAL</div>
+  <span id="adminBadge" class="dd soon hide" style="cursor:pointer;font-size:11.5px;padding:4px 9px" onclick="adminOff()" title="클릭하면 끕니다">🔧 관리자</span>
   <div class="search"><input id="gsearch" placeholder="바이어·품목·국가 검색  ⌘K" oninput="globalSearch()" onfocus="openPal();this.blur()"></div>
   <div class="sp"></div>
   <button class="qbtn" id="qb_tasks" onclick="openQP('tasks')">☑ <span class="ql">할 일</span><span class="qn hide"></span></button>
@@ -307,8 +308,8 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <div class="grp">리스크</div>
     <a data-v="rules"><span class="i">📚</span> 리스크 규칙</a>
     <a data-v="policy"><span class="i">📏</span> 거래 정책</a>
-    <a data-act="teaser-scan"><span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
-    <a data-act="teaser-connect"><span class="i">🔒</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
+    <a data-act="teaser-scan" id="mnu_scan"><span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
+    <a data-act="teaser-connect" id="mnu_connect"><span class="i">🔒</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px">추가 결제 예정</span></a>
     <div class="grp">서류·일정</div>
     <a data-v="docs"><span class="i">📁</span> 거래 서류함</a>
     <a data-v="docslib"><span class="i">📚</span> 서류 라이브러리</a>
@@ -321,6 +322,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     <a data-v="res"><span class="i">🔗</span> 자료·가이드</a>
     <div class="grp">관리</div>
     <a data-v="data"><span class="i">⚙</span> 데이터 관리</a>
+    <a data-v="adminconsole" class="adminOnly hide"><span class="i">🔧</span> 관리자 콘솔</a>
     <a data-act="settings"><span class="i">🛠</span> 설정</a>
     <div class="guidew" id="guidew" onclick="go('dash')"><span>🚀 시작 가이드</span><b id="guideCnt">0/4</b></div>
     <div class="foot">정보 제공·리스크 진단·권유·연결 서비스입니다. 확정·집행은 변호사·관세사·은행·K-SURE가 담당합니다. 데이터는 이 브라우저에 저장됩니다.<br><br><span style="cursor:pointer;text-decoration:underline" onclick="resetAll()">데이터 초기화</span></div>
@@ -455,6 +457,10 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
       <div class="panel"><h2>표준 수출 절차 (TRADESIGNAL이 자동 생성하는 할 일)</h2><div id="procguide"></div></div>
       <div class="panel"><h2>📢 관세청·기관 공지 <span class="pill">수동 갱신 — 자동 수집 아님</span></h2><div id="notices"></div></div>
     </section>
+    <!-- ADMIN (관리자 전용) -->
+    <section id="v-adminconsole" class="hide"><div class="phead"><div><h1>관리자 콘솔</h1><div class="d">수요·운영 집계 열람과 허용된 콘텐츠 편집. 판정 로직은 읽기 전용입니다.</div></div></div><div id="adminbody"></div></section>
+    <section id="v-scanprev" class="hide"><div class="phead"><div><h1>독소조항 스캐너</h1></div></div><div id="scanprevbody"></div></section>
+    <section id="v-connectprev" class="hide"><div class="phead"><div><h1>전문가 커넥팅</h1></div></div><div id="connectprevbody"></div></section>
     <!-- DATA MANAGEMENT -->
     <section id="v-data" class="hide">
       <div class="phead"><div><h1>데이터 관리</h1><div class="d">K-SURE 개방데이터(data.go.kr) 스냅샷을 탑재합니다. 값은 임의로 생성되지 않으며, 탑재한 파일 그대로 표시됩니다.</div></div></div>
@@ -535,8 +541,8 @@ function ctryMatch(dc,c){if(c==='EU')return EU_COUNTRIES.some(e=>dc.includes(e))
 function hsOf(s){const m=String(s).match(/\d{4}(\.\d{2,4})?/);return m?m[0].replace(/\./g,''):'';}
 function kbRules(d){
   const dhs=hsOf(d.item||'');
-  return KB_RULES.filter((r,i)=>
-    (typeof ruleOn!=='function'||ruleOn('kb'+i))&&
+  return KB_RULES.map((r,i)=>({...r,_i:i})).filter(r=>
+    (typeof ruleOn!=='function'||ruleOn('kb'+r._i))&&
     (!r.cats||r.cats.includes(d.cat))&&
     (!r.hs||(dhs&&dhs.startsWith(r.hs.replace(/\./g,''))))&&
     (!r.countries||r.countries.some(c=>ctryMatch(d.country||'',c))));
@@ -1002,7 +1008,7 @@ function taskStats(){
 }
 
 /* ---------- 렌더 ---------- */
-function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderDocLib();renderCal();renderInsights();renderKsurePage();renderPartners();renderNotices();renderBadge();renderQuickBtns();renderQP();save();}
+function render(){autoFollowup();renderGuide();renderToday();renderKpis();renderDue();renderRecent();renderMiniCal();renderNotif();renderQuick();renderBoard();renderLedger();renderTasks();renderRes();renderData();renderBuyers();renderCredit();renderWizard();renderRules();renderPolicy();renderDocs();renderDocLib();renderCal();renderInsights();renderKsurePage();renderPartners();renderNotices();renderAdminConsole();renderScanPrev();renderConnectPrev();renderBadge();renderQuickBtns();renderQP();save();}
 function renderBadge(){
   const s=taskStats();const n=s.over.length+s.today.length;
   const b=document.getElementById('taskbadge');
@@ -1190,8 +1196,8 @@ function addNotice(){
   NOTICES.unshift({t,s,dt,u,chk:iso()});noticesSave();renderNotices();toast('공지가 추가되었습니다');
 }
 function delNotice(i){NOTICES.splice(i,1);noticesSave();renderNotices();}
-function renderNotices(){
-  const el=document.getElementById('notices');if(!el)return;
+function renderNotices(targetId){
+  const el=document.getElementById(targetId||'notices');if(!el)return;
   el.innerHTML=`
    ${NOTICES.length?`<table><thead><tr><th>제목</th><th>출처</th><th>게시일</th><th>확인일</th><th></th></tr></thead><tbody>
     ${NOTICES.map((n,i)=>`<tr><td>${n.u?`<a href="${esc(n.u)}" target="_blank" rel="noopener" style="text-decoration:underline">${esc(n.t)} ↗</a>`:esc(n.t)}</td><td>${esc(n.s)}</td><td>${esc(n.dt)}</td><td>${esc(n.chk)}</td><td><span class="dc" onclick="delNotice(${i})">삭제</span></td></tr>`).join('')}</tbody></table>`
@@ -1209,7 +1215,7 @@ function renderKbFinder(){
   const out=document.getElementById('kbout');
   if(!cat&&!hs&&!ctry){out.innerHTML='카테고리·HS부호·수입국을 입력하면 해당 조합에 적용되는 통관·인증 규칙과 자동 생성될 할 일을 미리 볼 수 있습니다.';return;}
   const rules=kbRules({cat:cat||'—',item:hs,country:ctry});
-  out.innerHTML=rules.length?rules.map(r=>`<div class="rec"><span>📋</span><div>${esc(r.note)}${r.task?`<div style="margin-top:4px"><span class="trk"><i style="background:${TRACK_C[r.task.tr]}"></i>${r.task.tr}</span> <span class="pill">${STAGES[r.task.st]} 단계에 할 일 자동 생성${r.task.req?' · <b style="color:var(--red)">필수</b>':''}</span></div>`:''}</div></div>`).join('')
+  out.innerHTML=rules.length?rules.map(r=>`<div class="rec"><span>📋</span><div>${esc(kbNoteOf(r._i,r))}${r.task?`<div style="margin-top:4px"><span class="trk"><i style="background:${TRACK_C[r.task.tr]}"></i>${r.task.tr}</span> <span class="pill">${STAGES[r.task.st]} 단계에 할 일 자동 생성${r.task.req?' · <b style="color:var(--red)">필수</b>':''}</span></div>`:''}</div></div>`).join('')
    :'<div class="empty">해당 조합에 등록된 세부 규칙이 없습니다. 일반 절차(표준 수출 절차)가 적용됩니다.</div>';
 }
 
@@ -1383,7 +1389,7 @@ function runWizard(id){GUIDE.diag=true;uiSave();openDetail(id);curTab='위험 �
 /* 리스크 규칙 */
 let rulesTab='전체';
 function renderRules(){
-  const kb=KB_RULES.map((r,i)=>({id:'kb'+i,name:r.note.split('—')[0].trim().slice(0,34),desc:r.note,cat:'통관',src:'무역 실무 요건 요약, 2026-07 기준'}));
+  const kb=KB_RULES.map((r,i)=>({id:'kb'+i,name:kbNoteOf(i,r).split('—')[0].trim().slice(0,34),desc:kbNoteOf(i,r),cat:'통관',src:'무역 실무 요건 요약, 2026-07 기준'}));
   const all=[...CORE_RULES,...kb];
   const cats=['전체','결제','계약','통관','사기'];
   const list=all.filter(r=>rulesTab==='전체'||r.cat===rulesTab);
@@ -1839,7 +1845,7 @@ function detailTab(d){
       </div><div class="mut" style="font-size:11px;margin-top:5px">근거: 수출신고 수리일로부터 30일 이내 적재 (기한 경과 시 신고 취하·과태료 위험 — 일반 안내이며 구체 판단은 관세사·세관). <a href="https://unipass.customs.go.kr" target="_blank" rel="noopener" style="text-decoration:underline">유니패스 ↗</a></div></div>
       <label>통관·원산지</label><div style="margin-bottom:8px"><span class="pill">${d.newmkt?'⚠ 신규 수입국 — 검역·라벨 사전 확인':'기존 수입국'}</span>${d.cat&&CATREC[d.cat]?`<span class="pill">${d.cat} 유의</span>`:''}</div>
       ${d.cat&&CATREC[d.cat]?`<div class="mut" style="font-size:12.5px;margin-bottom:12px">${CATREC[d.cat].replace(/<[^>]+>/g,'')}</div>`:''}
-      ${kbs.length?`<label>이 거래에 적용되는 품목×수입국 규칙 (${kbs.length})</label><div style="margin-bottom:12px">${kbs.map(r=>`<div class="rec" style="border-top:1px dashed var(--line);padding:8px 0"><span>📋</span><div>${esc(r.note)}${r.task?` <span class="pill">→ ${STAGES[r.task.st]} 단계 할 일 자동 생성</span>`:''}</div></div>`).join('')}</div>`:''}
+      ${kbs.length?`<label>이 거래에 적용되는 품목×수입국 규칙 (${kbs.length})</label><div style="margin-bottom:12px">${kbs.map(r=>`<div class="rec" style="border-top:1px dashed var(--line);padding:8px 0"><span>📋</span><div>${esc(kbNoteOf(r._i,r))}${r.task?` <span class="pill">→ ${STAGES[r.task.st]} 단계 할 일 자동 생성</span>`:''}</div></div>`).join('')}</div>`:''}
       ${docTasks.length?`<label>서류·물류 할 일</label>${docTasks.map(t=>`<div class="trow ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${id},${t.id})"><span class="tt">${esc(t.title)} ${t.req?'<span class="req">필수</span>':''}</span>${tdd(t)}<span class="pill">${STAGES[t.stage]}</span></div>`).join('')}`:'<div class="mut" style="font-size:13px">아직 생성된 서류·물류 절차가 없습니다.</div>'}
       <div class="mut" style="font-size:13px;margin:12px 0">FTA 특혜관세·원산지 판정은 FTA-PASS·관세사로 연결합니다.</div>
       <label>전문기관 연결</label><div class="links">${LINKS.slice(0,4).map(l=>`<a href="${l[2]}" target="_blank" rel="noopener"><span>${l[0]}<div class="mut" style="font-weight:400;font-size:12px">${l[1]}</div></span><span>↗</span></a>`).join('')}</div>`;
@@ -1851,6 +1857,110 @@ function detailTab(d){
 function saveNotes(id){const d=deals.find(x=>x.id===id);d.notes=document.getElementById('d_notes').value;save();}
 function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];d.fraud[i]=!d.fraud[i];logIt(d,(d.fraud[i]?'사기 신호 체크: ':'사기 신호 해제: ')+FRAUD_CHECKS[i].slice(0,30));save();renderDetail(id);}
 function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
+/* ===== 관리자 모드 (시연 통제 장치 — 정적 사이트 특성상 개발자 도구로 우회 가능함을 전제) =====
+   목적: 심사·시연 자리에서 잠김 기능을 열어 보여주는 통제권. 사용자 화면에는 해제 경로 없음 */
+const ADMIN_CODE='CHANGE_ME_BEFORE_DEPLOY'; /* ⚠ 대표가 배포 전 직접 치환할 것 — 커밋·문서에 실코드 금지 */
+let ADMIN=false;
+let OVERLAY={clauseLib:{},kbNotes:{},teaser:{}};
+function adminLoad(){ADMIN=sGet('exportos_admin_v1')==='1';try{OVERLAY=Object.assign(OVERLAY,JSON.parse(sGet('exportos_admin_overlay_v1'))||{});}catch(e){}}
+function overlaySave(){sSet('exportos_admin_overlay_v1',JSON.stringify(OVERLAY));}
+let _brandClicks=[];
+function brandClick(){
+  const now=Date.now();_brandClicks=_brandClicks.filter(t=>now-t<1500);_brandClicks.push(now);
+  if(_brandClicks.length>=5){_brandClicks=[];adminGate();}
+}
+function adminGate(){
+  if(ADMIN)return;
+  const g=document.getElementById('gate');
+  g.innerHTML=`<div class="gbox"><h3>🔧 관리자 코드</h3>
+   <div class="mut" style="font-size:12px;margin-bottom:10px">시연·운영용 모드입니다.</div>
+   <input type="password" id="adm_code" placeholder="코드 입력" onkeydown="if(event.key==='Enter')adminTry()">
+   <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn line sm" onclick="closeGate()">취소</button><button class="btn sm" onclick="adminTry()">확인</button></div></div>`;
+  g.classList.add('on');setTimeout(()=>document.getElementById('adm_code').focus(),50);
+}
+function adminTry(){
+  if(v('adm_code')===ADMIN_CODE){ADMIN=true;sSet('exportos_admin_v1','1');closeGate();renderAdminUI();render();toast('관리자 모드가 켜졌습니다');}
+  else toast('코드가 올바르지 않습니다');
+}
+function adminOff(){if(confirm('관리자 모드를 끌까요?')){ADMIN=false;sDel('exportos_admin_v1');renderAdminUI();go('wizard');render();toast('관리자 모드가 꺼졌습니다');}}
+function renderAdminUI(){
+  document.getElementById('adminBadge').classList.toggle('hide',!ADMIN);
+  document.querySelectorAll('.adminOnly').forEach(el=>el.classList.toggle('hide',!ADMIN));
+  const sc=document.getElementById('mnu_scan'),cn=document.getElementById('mnu_connect');
+  if(sc)sc.innerHTML=ADMIN?'<span class="i">🔬</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px;background:var(--amber-l);color:var(--amber)">관리자 미리보기</span>':'<span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span>';
+  if(cn)cn.innerHTML=ADMIN?'<span class="i">🤝</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px;background:var(--amber-l);color:var(--amber)">관리자 미리보기</span>':'<span class="i">🔒</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px">추가 결제 예정</span>';
+}
+const ADMIN_BANNER='<div class="warnbar" style="border-radius:10px">🔧 관리자 미리보기 — 시연용 화면입니다. 일반 사용자에게는 잠금 상태이며, 결제 기능 도입 후 해제됩니다.</div>';
+/* KB note 오버레이 적용 (문구만 — 매칭 조건·task는 원본 고정) */
+const kbNoteOf=(i,r)=>OVERLAY.kbNotes[i]||r.note;
+/* 관리자 미리보기: 스캐너(실기능 지시서 대기) */
+function renderScanPrev(){
+  const el=document.getElementById('scanprevbody');if(!el)return;
+  el.innerHTML=!ADMIN?emptyBox('🔒','관리자 전용 화면입니다.','',''):ADMIN_BANNER+
+   `<div class="panel"><h2>🔬 독소조항 스캐너</h2>
+    <div class="mut" style="font-size:13px;line-height:1.8">실기능은 별도 지시서(INSTRUCTION_확장_독소조항스캐너.md) 적용 시 이 자리에 열립니다. 현재는 <b>미구현</b>이며, 목업·가짜 판정 결과를 표시하지 않습니다(날조 금지 원칙).</div>
+    <div class="mut" style="font-size:12px;margin-top:8px">예정 구성: 계약 문안 붙여넣기 → 위험 조항 후보 표시(결정론 패턴) → 대안 문구 라이브러리 연결 → "법적 확정은 변호사 확인 필요" 고정.</div></div>`;
+}
+/* 관리자 미리보기: 전문가 커넥팅 (목업 + 실동작은 '거래 맥락 요약'만 — 전부 원장 데이터) */
+function ctxSummary(id){
+  const d=deals.find(x=>x.id===id);if(!d)return'';
+  const open=(d.tasks||[]).filter(t=>!t.done&&t.stage<=d.stage).slice(0,5);
+  return `[상담용 거래 요약 — TRADESIGNAL 생성]\n바이어: ${d.buyer} (${d.country})\n품목: ${d.item}\n금액: USD ${(d.amt||0).toLocaleString()} / 결제: ${PAY[d.pay]}${d.inco?' / '+d.inco:''}\n안전 점검: ${d.score}점(만점 126) · ${relabel(d.level)}\n위험 노출액(추정): USD ${exposure(d.amt||0,(d.sim&&d.sim.adv)||0,'').toLocaleString()}\n미완료 절차(상위 ${open.length}건):\n${open.map(t=>' - ['+STAGES[t.stage]+'] '+t.title).join('\n')||' - 없음'}\n※ 입력 정보 기반 참고용 요약입니다.`;
+}
+function renderConnectPrev(){
+  const el=document.getElementById('connectprevbody');if(!el)return;
+  if(!ADMIN){el.innerHTML=emptyBox('🔒','관리자 전용 화면입니다.','','');return;}
+  const actives=deals.filter(d=>d.stage<5);
+  const sel=window._ctxSel||(actives[0]&&actives[0].id);window._ctxSel=sel;
+  el.innerHTML=ADMIN_BANNER+
+   `<div class="wiz3">${[['🛃','관세사 파트너스','수출신고·FTA 원산지·품목분류 확정'],['⚖️','법률 파트너스','계약서 검토·분쟁 대응·국제 중재'],['🎓','무역실무 전문가','결제조건 설계·서류 실무·바이어 협상']].map(c=>`<div class="wcard"><span class="wi">${c[0]}</span><span class="wt">${c[1]}</span><span class="wd">${c[2]}</span><span class="pill">제휴 확정 후 활성화</span></div>`).join('')}</div>
+   <div class="panel"><h2>가상 흐름 시연 (실데이터 아님 — 제휴 전 단계)</h2>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:12px;margin-bottom:12px">
+     <span class="pill" style="background:var(--green-l);color:var(--green)">① 상담 요청</span><span>→</span>
+     <span class="pill" style="background:var(--green-l);color:var(--green)">② 거래 맥락 요약 생성 (실동작)</span><span>→</span>
+     <span class="pill">③ 전문가 전달 (제휴 후)</span><span>→</span>
+     <span class="pill">④ 회신 기록 (제휴 후)</span></div>
+    <label>② 거래 맥락 요약 — 원장 데이터로 결정론 조립 (복사해서 상담에 활용)</label>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><select style="width:auto" onchange="window._ctxSel=Number(this.value);renderConnectPrev()">${actives.map(d=>`<option value="${d.id}" ${d.id===sel?'selected':''}>${esc(d.buyer)}</option>`).join('')}</select>
+    <button class="btn ghost sm" onclick="copyText(ctxSummary(window._ctxSel));toast('요약이 복사되었습니다')">요약 복사</button></div>
+    <div class="clause">${esc(ctxSummary(sel))}</div></div>`;
+}
+/* 관리자 콘솔 */
+function renderAdminConsole(){
+  const el=document.getElementById('adminbody');if(!el)return;
+  if(!ADMIN){el.innerHTML=emptyBox('🔒','관리자 전용 화면입니다.','','');return;}
+  const qa=window._qa||[];
+  el.innerHTML=`
+   <div class="panel"><h2>📊 수요·운영 대시보드 (읽기 전용 — 이 브라우저 localStorage 집계)</h2>
+    <table><tbody>
+    <tr><td>티저 — 독소조항 스캐너</td><td>클릭 ${TEASER.scan.c} · 알림 신청 ${TEASER.scan.s}</td></tr>
+    <tr><td>티저 — 전문가 커넥팅</td><td>클릭 ${TEASER.connect.c} · 알림 신청 ${TEASER.connect.s}</td></tr>
+    <tr><td>알림 신청 이메일</td><td>${TEASER.emails.length?TEASER.emails.map(e=>esc(e.m)+' ('+e.k+')').join('<br>'):'없음'}</td></tr>
+    <tr><td>점검 피드백</td><td>도움됨 ${FEEDBACK.yes} · 아니오 ${FEEDBACK.no}</td></tr>
+    <tr><td>파일럿 이메일</td><td>${FEEDBACK.emails.length?FEEDBACK.emails.map(e=>esc(e.m)).join('<br>'):'없음'}</td></tr>
+    <tr><td>OECD 데이터</td><td>${OECD_LIST.length}개국 · ${esc(OECD_META.dataVersion)} 기준${oecdStaleBadge()}</td></tr>
+    <tr><td>K-SURE 수기 데이터</td><td>${['countryRatings','oecdGrades','riskIndex'].map(k=>KSURE_DATA[k].length).join(' / ')}건 · ${esc(KSURE_DATA.meta.dataVersion||'미탑재')}</td></tr>
+    <tr><td>회귀 테스트</td><td>${qa.filter(t=>t.pass).length}/${qa.length} 통과</td></tr></tbody></table>
+    <div style="margin-top:10px"><button class="btn line sm" onclick="exportJSON()">전체 집계 JSON 내보내기 (오버레이 포함)</button></div></div>
+   <div class="panel"><h2>✏️ 콘텐츠 편집 (허용 목록 한정 — 오버레이 저장, 삭제 시 원본 복원)</h2>
+    <label>KB 유의사항 문구 (매칭 조건·할 일 규칙은 편집 불가)</label>
+    <div style="max-height:220px;overflow:auto;margin-bottom:12px">${KB_RULES.map((r,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;font-size:12px"><span class="pill" style="flex-shrink:0">${i}</span><input value="${esc(kbNoteOf(i,r))}" onchange="OVERLAY.kbNotes[${i}]=this.value;overlaySave();render()" style="font-size:12px;padding:5px 8px">${OVERLAY.kbNotes[i]?`<button class="btn line sm" onclick="delete OVERLAY.kbNotes[${i}];overlaySave();render()">원본</button>`:''}</div>`).join('')}</div>
+    <label>티저 소개 문구 (줄바꿈 = 3줄)</label>
+    ${['scan','connect'].map(k=>`<div style="margin-bottom:8px"><span class="pill">${k==='scan'?'독소조항 스캐너':'전문가 커넥팅'}</span><textarea rows="3" style="font-size:12px;margin-top:4px" onchange="OVERLAY.teaser['${k}']=this.value.split('\\n');overlaySave()">${esc((OVERLAY.teaser[k]||[]).join('\n'))}</textarea></div>`).join('')}
+    <label>대안 문구 라이브러리</label><div class="mut" style="font-size:12px;margin-bottom:10px">스캐너 지시서 적용 후 활성화됩니다.</div>
+    <label>공지 관리 (자료·가이드와 동일 기능)</label><div id="noticesAdmin"></div>
+    <div class="mut" style="font-size:12px;margin-top:8px">거래 정책·리스크 규칙 사용/미사용은 기존 화면에서: <span class="dc" onclick="go('policy')">거래 정책</span> · <span class="dc" onclick="go('rules')">리스크 규칙</span></div></div>
+   <div class="panel"><h2>🔒 판정 로직 (읽기 전용)</h2>
+    <table><thead><tr><th>지표</th><th>배점</th></tr></thead><tbody>
+    <tr><td>결제방식</td><td>O/A 40 · 사후T/T 35 · D/A 25 · D/P 15 · L/C 5 · 선수금 0</td></tr>
+    <tr><td>신용확인</td><td>D 35 · C 25 · 미확인 20 · B 8 · A 0</td></tr>
+    <tr><td>국가 위험(OECD)</td><td>6~7등급 20 · 4~5등급 14 · 2~3등급 8 · 0~1등급 0 · 미확인 0</td></tr>
+    <tr><td>거래 조건</td><td>$100k+ 15 / $50k+ 8 · 검사조항 없음 10 · 인코텀즈 미정 6</td></tr>
+    <tr><td>판정 구간</td><td>60+ 높음 / 30~59 주의 / 0~29 양호 (만점 126)</td></tr></tbody></table>
+    <div class="warnbar" style="margin-top:10px">판정 규칙 변경은 앱에서 불가 — 코드 수정 + 회귀 테스트 정답 재산정 + 재배포 절차로만 진행합니다 (규칙 버전 관리).</div></div>`;
+  renderNotices('noticesAdmin');
+}
+
 /* ===== 핵심기능고도화: 조치 버튼·재점검·피드백·티저·백업 ===== */
 let FEEDBACK={yes:0,no:0,emails:[]};try{FEEDBACK=Object.assign(FEEDBACK,JSON.parse(sGet('exportos_feedback_v1'))||{});}catch(e){}
 let TEASER={scan:{c:0,s:0},connect:{c:0,s:0},emails:[]};try{TEASER=Object.assign(TEASER,JSON.parse(sGet('exportos_teaser_v1'))||{});}catch(e){}
@@ -1889,8 +1999,10 @@ function recheck(id){
 /* 확장 잠금 티저 (§4) — 실기능 없음, 클릭·신청 수만 기록. 가격 미표기 */
 function teaserModal(key){
   TEASER[key].c++;tsSave();
-  const info=key==='scan'?['🔬 독소조항 스캐너','계약서 텍스트에서 위험 조항(일방 해지·무제한 배상·관할 불리 등) 후보를 표시해 드립니다.','표시는 참고용이며, 법적 판단은 변호사가 수행합니다.','추가 결제 예정 기능입니다 — 출시 시 알려드릴까요?']
+  let info=key==='scan'?['🔬 독소조항 스캐너','계약서 텍스트에서 위험 조항(일방 해지·무제한 배상·관할 불리 등) 후보를 표시해 드립니다.','표시는 참고용이며, 법적 판단은 변호사가 수행합니다.','추가 결제 예정 기능입니다 — 출시 시 알려드릴까요?']
    :['🤝 전문가 커넥팅','관세사·변호사·무역실무 전문가에게 이 거래 맥락 그대로 상담을 연결합니다.','연결·중개까지만 제공하며, 자문 계약은 당사자 간 체결합니다.','추가 결제 예정 기능입니다 — 출시 시 알려드릴까요?'];
+  const ov=OVERLAY.teaser[key];if(ov&&ov.filter(x=>x&&x.trim()).length)info=[info[0],...ov.filter(x=>x&&x.trim()).slice(0,3)];
+  while(info.length<4)info.push('');
   const g=document.getElementById('gate');
   g.innerHTML=`<div class="gbox"><h3>${info[0]} <span class="dd soon">추가 결제 예정</span></h3>
    <div style="font-size:13px;line-height:1.8;color:#444">${info[1]}<br>${info[2]}<br><b>${info[3]}</b></div>
@@ -1991,19 +2103,19 @@ function importCSV(inp){
 function openSheet(){document.getElementById('mask').classList.add('on');}
 function closeSheet(){document.getElementById('mask').classList.remove('on');}
 document.getElementById('mask').addEventListener('click',e=>{if(e.target.id==='mask')closeSheet();});
-const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','docslib','calendar','insights','ksure','partners'];
+const VIEWS=['dash','tasks','board','ledger','res','data','buyers','credit','wizard','rules','policy','docs','docslib','calendar','insights','ksure','partners','adminconsole','scanprev','connectprev'];
 function go(v){VIEWS.forEach(x=>document.getElementById('v-'+x).classList.toggle('hide',x!==v));document.querySelectorAll('.side a').forEach(a=>a.classList.toggle('active',a.dataset.v===v));}
 document.querySelector('.side').addEventListener('click',e=>{const a=e.target.closest('a');if(!a)return;
  if(a.dataset.v)go(a.dataset.v);
  else if(a.dataset.act==='settings')openSettings();
- else if(a.dataset.act==='teaser-scan')teaserModal('scan');
- else if(a.dataset.act==='teaser-connect')teaserModal('connect');
+ else if(a.dataset.act==='teaser-scan'){ADMIN?go('scanprev'):teaserModal('scan');}
+ else if(a.dataset.act==='teaser-connect'){ADMIN?go('connectprev'):teaserModal('connect');}
  document.querySelector('.side').classList.remove('open');});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
 const v=id=>document.getElementById(id).value.trim();
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function opt(vals,labels,sel){return vals.map((x,i)=>`<option value="${x}" ${x===sel?'selected':''}>${labels[i]}</option>`).join('');}
-function exportJSON(){const b=new Blob([JSON.stringify({deals,seq,feedback:FEEDBACK,teaser:TEASER},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료 — 안전한 곳에 보관하세요');}
+function exportJSON(){const b=new Blob([JSON.stringify({deals,seq,feedback:FEEDBACK,teaser:TEASER,adminOverlay:OVERLAY},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료 — 안전한 곳에 보관하세요');}
 
 /* ---------- 시드 ---------- */
 function seedData(){
@@ -2022,8 +2134,8 @@ function seedData(){
     syncRiskTasks(d);deals.push(d);
   });
 }
-function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
-uiLoad();ksureLoad();oecdLoad();
+function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);sDel('exportos_admin_v1');sDel('exportos_admin_overlay_v1');ADMIN=false;OVERLAY={clauseLib:{},kbNotes:{},teaser:{}};renderAdminUI();deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
+uiLoad();adminLoad();ksureLoad();oecdLoad();
 load();if(!deals.length)seedData();
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
 /* 구버전 서류함(숫자 키) → 이름 키 마이그레이션 */
@@ -2060,6 +2172,7 @@ setTimeout(()=>{if(!_persist)toast('이 환경에서는 브라우저 저장이 �
 if(!PROFILE.name&&!GUIDE.onboard){GUIDE.onboard=true;uiSave();setTimeout(()=>openSettings(true),500);}
 /* 기본 화면 = 거래 안전 점검 (핵심 전면) */
 go('wizard');
+renderAdminUI(); /* 새로고침 후 관리자 상태 복원 표시 */
 /* 백업 1회 고지 (§5) */
 if(!GUIDE.backupNote){GUIDE.backupNote=true;uiSave();setTimeout(()=>toast('데이터는 이 브라우저에만 저장됩니다 — 상단 💾 버튼으로 백업하세요'),2600);}
 </script>
