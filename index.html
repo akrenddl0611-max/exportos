@@ -780,7 +780,7 @@ function policyViolations(d){
 function guideSteps(){return[
  {lb:'회사정보 입력',done:!!PROFILE.name,act:'openSettings()'},
  {lb:'K-SURE 데이터 탑재',done:!!KSURE_DATA.meta.dataVersion,act:"go('data')"},
- {lb:'첫 거래 등록',done:deals.length>0,act:'openNew()'},
+ {lb:'첫 거래 등록',done:deals.some(d=>!d.sample),act:'openNew()'},
  {lb:'거래 안전 점검 실행',done:GUIDE.diag,act:"go('wizard')"},
 ];}
 /* 바이어 엔티티 (원장에서 파생) */
@@ -1130,6 +1130,7 @@ function renderData(){
     <table><thead><tr><th>데이터셋</th><th>건수</th></tr></thead><tbody>
     ${Object.keys(KS_LABEL).map(k=>`<tr><td>${KS_LABEL[k]}</td><td>${KSURE_DATA[k].length}</td></tr>`).join('')}</tbody></table>
     <div class="mut" style="font-size:11.5px;margin:10px 0">출처: ${esc(m.source)}</div>
+    <div style="margin:10px 0;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px">예시 거래: <b>${deals.filter(d=>d.sample).length}건</b> <button class="btn line sm" onclick="loadSamples()">예시 데이터 넣어보기</button> <button class="btn line sm" onclick="removeSamples()">예시 삭제</button></div>
     <div style="display:flex;gap:8px"><button class="btn line sm" onclick="ksureSampleLoad();render();toast('샘플 데이터를 탑재했습니다 — 실데이터로 교체하세요')">데모용 샘플 탑재</button>
     <button class="btn line sm" onclick="if(confirm('탑재된 K-SURE 데이터를 모두 비울까요?')){ksureClear();render();}">데이터 비우기</button>
     <a class="btn ghost sm" href="https://www.data.go.kr" target="_blank" rel="noopener">data.go.kr ↗</a></div>`;
@@ -1229,7 +1230,8 @@ function renderGuide(){
   const el=document.getElementById('guidecard');
   if(done===4||GUIDE.collapsed){el.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><b>🚀 시작 가이드 ${done}/4${done===4?' — 완료 🎉':''}</b><span style="flex:1"></span><button class="btn line sm" onclick="GUIDE.collapsed=false;uiSave();render()">펼치기</button></div>`;return;}
   el.innerHTML=`<h2>🚀 시작 가이드 <span class="pill">${done}/4</span><span style="flex:1"></span><button class="btn line sm" onclick="GUIDE.collapsed=true;uiSave();render()">접기</button></h2>
-   <div class="guide">${steps.map((s,i)=>`<div class="gstep ${s.done?'done':''}"><span class="num">${s.done?'✓':i+1}</span><span class="gt">${s.lb}</span>${s.done?'':`<button class="btn ghost sm" onclick="${s.act}">실행</button>`}</div>`).join('')}</div>`;
+   <div class="guide">${steps.map((s,i)=>`<div class="gstep ${s.done?'done':''}"><span class="num">${s.done?'✓':i+1}</span><span class="gt">${s.lb}</span>${s.done?'':`<button class="btn ghost sm" onclick="${s.act}">실행</button>`}</div>`).join('')}</div>
+   ${deals.length?'':'<div class="mut" style="font-size:12px;margin-top:10px">먼저 구경해 보고 싶다면 — <span class="dc" onclick="loadSamples()">예시 데이터 넣어보기</span> (예시 뱃지가 붙고 언제든 삭제 가능)</div>'}`;
 }
 /* 최근 활동 · 알림 · 미니 캘린더 · 빠른 링크 */
 function renderRecent(){
@@ -1358,7 +1360,7 @@ let wizSel=null;
 function renderWizard(){
   const actives=deals.filter(d=>d.stage<5);
   const el=document.getElementById('wizbody');
-  if(!actives.length){el.innerHTML=qcForm()+emptyBox('🛡','저장된 진행 중 거래가 없습니다. 위 간편 점검부터 시작해 보세요.','정식 등록 폼 열기','openNew()');return;}
+  if(!actives.length){el.innerHTML=qcForm()+emptyBox('🛡','저장된 진행 중 거래가 없습니다. 위 간편 점검부터 시작해 보세요.','정식 등록 폼 열기','openNew()')+(deals.length?'':'<div class="mut" style="font-size:12px;text-align:center;margin-top:-14px;padding-bottom:14px">또는 <span class="dc" onclick="loadSamples()">예시 데이터로 구경하기</span></div>');return;}
   if(!wizSel||!actives.some(d=>d.id===wizSel))wizSel=actives[0].id;
   const d=actives.find(x=>x.id===wizSel);
   const hist=buyerHistory(d);const noG=['OA','TT_A','DA'].includes(d.pay);
@@ -2134,9 +2136,12 @@ function seedData(){
     syncRiskTasks(d);deals.push(d);
   });
 }
-function resetAll(){if(confirm('모든 데이터를 초기화(샘플로 복원)할까요?')){sDel(KEY);sDel('exportos_admin_v1');sDel('exportos_admin_overlay_v1');ADMIN=false;OVERLAY={clauseLib:{},kbNotes:{},teaser:{}};renderAdminUI();deals=[];seq=1;seedData();render();toast('초기화되었습니다');}}
+function resetAll(){if(confirm('모든 데이터를 초기화할까요? (완전 빈 상태로 복원됩니다)')){sDel(KEY);sDel('exportos_admin_v1');sDel('exportos_admin_overlay_v1');ADMIN=false;OVERLAY={clauseLib:{},kbNotes:{},teaser:{}};renderAdminUI();deals=[];seq=1;render();toast('초기화되었습니다 — 빈 상태에서 시작합니다');}}
+/* 예시 데이터 opt-in */
+function loadSamples(){if(deals.some(d=>d.sample)){toast('예시 데이터가 이미 있습니다');return;}seedData();render();toast('예시 거래 4건을 넣었습니다 — 언제든 삭제할 수 있습니다');}
+function removeSamples(){const n=deals.filter(d=>d.sample).length;if(!n){toast('삭제할 예시가 없습니다');return;}if(confirm(`예시 거래 ${n}건을 삭제할까요? (직접 등록한 거래는 유지됩니다)`)){deals=deals.filter(d=>!d.sample);render();toast('예시를 삭제했습니다');}}
 uiLoad();adminLoad();ksureLoad();oecdLoad();
-load();if(!deals.length)seedData();
+load(); /* 클린 스타트: 예시 데이터는 자동 생성하지 않음 — [예시 데이터 넣어보기]로만 (opt-in) */
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
 /* 구버전 서류함(숫자 키) → 이름 키 마이그레이션 */
 deals.forEach(d=>{if(d.docs&&d.docs[0]!==undefined){const old=['P/I','계약서','B/L·AWB','C/O','보험증권'];const nd={};Object.keys(d.docs).forEach(k=>{if(/^\d+$/.test(k)&&old[k])nd[old[k]]=d.docs[k];else if(!/^\d+$/.test(k))nd[k]=d.docs[k];});d.docs=nd;}});
