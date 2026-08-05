@@ -493,7 +493,7 @@ function sDel(k){try{localStorage.removeItem(k);}catch(e){delete _mem[k];}}
 const STAGES=['리드·상담','계약','결제·생산','선적·통관','회수','완료'];
 const PAY={OA:'외상거래(O/A)',TT_A:'사후 T/T',DA:'인수인도(D/A)',DP:'지급인도(D/P)',LC:'신용장(L/C)',TT_P:'선수금 T/T'};
 const PAY_RISK={OA:'담보 없음 · 회수 위험 최고',TT_A:'선적 후 송금 · 회수 위험 높음',DA:'인수 후 지급 · 위험 있음',DP:'서류=지급 · 위험 낮음',LC:'은행 지급확약 · 낮음(서류 하자 유의)',TT_P:'선지급 · 위험 최저'};
-const LINKS=[['K-SURE 단기수출보험','미회수 위험 수출보험 가입','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
+const LINKS=[['K-SURE 단기수출보험','미회수 위험 수출보험 가입','https://www.ksure.or.kr'],['관세청 FTA 포털','FTA 특혜·원산지','https://www.customs.go.kr/ftaportalkor/main.do'],['FTA-PASS 원산지관리','원산지 판정·증빙','https://www.ftapass.or.kr'],['한국무역협회','무역실무 상담·통계','https://www.kita.net'],['uTradeHub','전자무역 서식·통관','https://www.utradehub.or.kr'],['KOTRA','바이어 발굴·시장정보','https://www.kotra.or.kr']];
 const CATS=['수산식품','농식품','화장품','기계·부품','일반'];
 const CATREC={'수산식품':'<b>[통관]</b> 수산식품 — 수입국 검역·위생증명, 현지어 라벨, 유통기한·냉장/냉동 조건 사전 확인','농식품':'<b>[통관]</b> 농식품 — 잔류농약·검역 기준 및 라벨 요건 사전 확인','화장품':'<b>[통관]</b> 화장품 — 수입국 성분규제·인증(CPNP·FDA 등)·라벨 규정 사전 확인','기계·부품':'<b>[통관]</b> 기계·부품 — 안전인증(CE·UL 등)·전략물자 해당 여부·원산지(FTA) 검토','일반':''};
 
@@ -573,7 +573,7 @@ const STAGE_TASKS=[
  [ // 3 선적·통관 — 수출 절차 내비게이터 (정보·체크리스트·공식 링크. 절차 판단·신고 대행 아님)
   {t:'수출신고 방식 결정 — 직접(유니패스) 또는 관세사 위임',tr:'물류·통관',req:1,off:2,link:'https://unipass.customs.go.kr',warn:'결정 지연 시 선적 일정 전체가 밀립니다'},
   {t:'품목 수출요건 확인 — HS별 요건확인 대상 여부를 유니패스에서 확인 (판정은 관세사·세관)',tr:'물류·통관',req:1,off:2,link:'https://unipass.customs.go.kr',warn:'요건 미확인 시 통관 보류 위험'},
-  {t:'FTA 활용 여부 결정 — 원산지증명(C/O) 준비',tr:'서류',req:0,off:3,link:'https://www.customs.go.kr/ftaportalkor',warn:'미활용 시 바이어 관세 부담 증가로 가격경쟁력 저하'},
+  {t:'FTA 활용 여부 결정 — 원산지증명(C/O) 준비',tr:'서류',req:0,off:3,link:'https://www.customs.go.kr/ftaportalkor/main.do',warn:'미활용 시 바이어 관세 부담 증가로 가격경쟁력 저하'},
   {t:'수출신고 및 신고필증 확보 — 수리일을 서류·통관 탭에 입력하면 적재 기한 D-day 자동 등록',tr:'물류·통관',req:1,off:3,link:'https://unipass.customs.go.kr',warn:'수리일부터 30일 내 적재 필요(연장 가능) — 경과 시 신고 취하·과태료 위험'},
   {t:'선적·적하보험 확인, B/L·AWB 수취',tr:'물류·통관',req:1,off:5,warn:'보험 공백 시 운송 사고 손실이 무담보가 됩니다'},
   {t:'결제방식별 선적서류 처리 (L/C 매입 · D/A·D/P 추심 의뢰 · 외상거래(O/A) 송부)',tr:'서류',req:1,off:5},
@@ -1410,7 +1410,7 @@ const DOC_LIBRARY=[
  {name:'포장명세서 (P/L)',en:'Packing List',what:'포장 단위·중량·수량 명세',when:'결제·생산~선적',who:'수출자',need:'공통'},
  {name:'선하증권(B/L)·항공화물운송장(AWB)',en:'Bill of Lading / Air Waybill',what:'운송계약·물품 수령 증빙 (해상 B/L은 권리증권)',when:'선적·통관',who:'선사·항공사(포워더)',need:'공통'},
  {name:'수출신고필증',en:'Export Declaration',what:'세관 수출신고 수리 증빙 — 수리일+30일 내 적재',when:'선적·통관',who:'세관(유니패스)',need:'공통',link:'https://unipass.customs.go.kr'},
- {name:'원산지증명서 (C/O)',en:'Certificate of Origin',what:'FTA 특혜관세 적용 등을 위한 원산지 증빙',when:'선적·통관',who:'상공회의소·세관/자율발급',need:'FTA',link:'https://www.customs.go.kr/ftaportalkor'},
+ {name:'원산지증명서 (C/O)',en:'Certificate of Origin',what:'FTA 특혜관세 적용 등을 위한 원산지 증빙',when:'선적·통관',who:'상공회의소·세관/자율발급',need:'FTA',link:'https://www.customs.go.kr/ftaportalkor/main.do'},
  {name:'적하보험증권',en:'Cargo Insurance Policy',what:'운송 중 물품 손해 담보 증빙 (부보 주체는 인코텀즈에 따름)',when:'선적·통관',who:'손해보험사',need:'보험'},
  {name:'신용장(L/C)·선적서류 세트',en:'L/C & Shipping Documents',what:'은행 지급확약과 그 조건에 맞춘 서류 일체 (UCP 600)',when:'계약~회수',who:'개설은행/수출자',need:'L/C'},
  {name:'환어음',en:'Bill of Exchange',what:'추심·매입 시 지급 청구 수단',when:'회수',who:'수출자(은행 경유)',need:'L/C'},
