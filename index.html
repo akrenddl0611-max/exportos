@@ -1861,7 +1861,7 @@ function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];
 function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
 /* ===== 관리자 모드 (시연 통제 장치 — 정적 사이트 특성상 개발자 도구로 우회 가능함을 전제) =====
    목적: 심사·시연 자리에서 잠김 기능을 열어 보여주는 통제권. 사용자 화면에는 해제 경로 없음 */
-const ADMIN_CODE='김의현'; /* ⚠ 대표가 배포 전 직접 치환할 것 — 커밋·문서에 실코드 금지 */
+const ADMIN_CODE='Dmlgus2834964'; /* ⚠ 대표가 배포 전 직접 치환할 것 — 커밋·문서에 실코드 금지 */
 let ADMIN=false;
 let OVERLAY={clauseLib:{},kbNotes:{},teaser:{}};
 function adminLoad(){ADMIN=sGet('exportos_admin_v1')==='1';try{OVERLAY=Object.assign(OVERLAY,JSON.parse(sGet('exportos_admin_overlay_v1'))||{});}catch(e){}}
