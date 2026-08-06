@@ -1876,7 +1876,7 @@ function adminGate(){
   const g=document.getElementById('gate');
   g.innerHTML=`<div class="gbox"><h3>🔧 관리자 코드</h3>
    <div class="mut" style="font-size:12px;margin-bottom:10px">시연·운영용 모드입니다.</div>
-   <input type="password" id="adm_code" placeholder="코드 입력" onkeydown="if(event.key==='Enter')adminTry()">
+   <input type="password" id="adm_code" placeholder="코드 입력" onkeydown="if(event.key==='Enter'&&!event.isComposing)adminTry()">
    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px"><button class="btn line sm" onclick="closeGate()">취소</button><button class="btn sm" onclick="adminTry()">확인</button></div></div>`;
   g.classList.add('on');setTimeout(()=>document.getElementById('adm_code').focus(),50);
 }
