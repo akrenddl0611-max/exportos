@@ -614,35 +614,81 @@ const FRAUD_CHECKS=[
 ];
 /* K-SURE 개방데이터 스냅샷 — 출고 시 값 비움. 실데이터는 data.go.kr에서 받아 [데이터 관리]로 탑재 */
 const KSURE_KEY='exportos_ksure_v1';
-let KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null},countryRatings:[],oecdGrades:[],riskIndex:[]};
-function ksureLoad(){try{const s=JSON.parse(sGet(KSURE_KEY));if(s&&s.meta)KSURE_DATA=s;}catch(e){}}
+const KS_KINDS=['countryRatings','oecdGrades','riskIndex'];
+let KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null,versions:{}},countryRatings:[],oecdGrades:[],riskIndex:[]};
+/* P6-1 데이터셋별 기준일 — meta.versions[kind]={dataVersion,loadedAt}. 구 단일 dataVersion은 1회 이관(멱등) */
+function ksureMigrate(){
+  const m=KSURE_DATA.meta;m.versions=m.versions||{};
+  KS_KINDS.forEach(k=>{
+    if(!m.versions[k]&&(KSURE_DATA[k]||[]).length&&m.dataVersion)m.versions[k]={dataVersion:m.dataVersion,loadedAt:m.loadedAt||null};
+  });
+}
+function ksureLoad(){try{const s=JSON.parse(sGet(KSURE_KEY));if(s&&s.meta)KSURE_DATA=s;}catch(e){}ksureMigrate();}
 function ksureSave(){sSet(KSURE_KEY,JSON.stringify(KSURE_DATA));}
-function ksureStale(){const dv=KSURE_DATA.meta.dataVersion;if(!dv||!/^\d{4}-\d{2}/.test(dv))return false;return (Date.now()-new Date(dv))/86400000>=90;}
+const ksVer=k=>(KSURE_DATA.meta.versions&&KSURE_DATA.meta.versions[k]&&KSURE_DATA.meta.versions[k].dataVersion)||null;
+const ksLoaded=()=>KS_KINDS.some(k=>(KSURE_DATA[k]||[]).length)||!!KSURE_DATA.meta.dataVersion;
+/* 데이터셋별 노후 판정(90일) */
+function ksureStale(kind){
+  const dv=kind?ksVer(kind):KSURE_DATA.meta.dataVersion;
+  if(!dv||!/^\d{4}-\d{2}/.test(dv))return false;
+  return (Date.now()-new Date(dv))/86400000>=90;
+}
+const ksStaleBadge=k=>ksureStale(k)?' <span class="dd soon">⚠ 데이터 갱신 권장(90일 경과)</span>':'';
+const ksTag=k=>ksVer(k)?`<span class="mut" style="font-size:11px">(K-SURE 개방데이터, ${esc(ksVer(k))} 기준)</span>${ksStaleBadge(k)}`:'';
+/* P6-3 표시용 조회 — KO2EN(공용 테이블, 내용 수정 금지)을 참조만 하여 한글↔영문 양방향 매칭 */
+function ctryAliases(name){
+  const s=String(name||'').trim();if(!s)return[];
+  const out=[s];
+  if(typeof KO2EN!=='undefined'){
+    if(KO2EN[s])out.push(KO2EN[s]);
+    else{const hit=Object.keys(KO2EN).find(k=>s.includes(k));if(hit)out.push(KO2EN[hit]);}
+    Object.keys(KO2EN).forEach(ko=>{if(String(KO2EN[ko]).toLowerCase()===s.toLowerCase())out.push(ko);}); /* 역방향 */
+  }
+  return [...new Set(out.filter(Boolean))];
+}
 function ksureLookup(country,data=KSURE_DATA){
-  if(!data.meta.dataVersion||!country)return null; /* 미탑재 또는 국가 미입력 */
-  const f=a=>a.filter(x=>x.country&&(String(country).includes(x.country)||String(x.country).includes(country)));
+  const loaded=data===KSURE_DATA?ksLoaded():(!!data.meta.dataVersion||KS_KINDS.some(k=>(data[k]||[]).length));
+  if(!loaded||!country)return null; /* 미탑재 또는 국가 미입력 */
+  const al=ctryAliases(country).map(x=>x.toLowerCase());
+  const hit=x=>{const c=String(x.country||'').trim().toLowerCase();if(!c)return false;return al.some(a=>a===c||a.includes(c)||c.includes(a));};
+  const f=a=>(a||[]).filter(hit);
   return{cr:f(data.countryRatings),oe:f(data.oecdGrades),ri:f(data.riskIndex)};
 }
 function ksureSampleLoad(){
-  KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:'샘플(실데이터 교체 필요)',loadedAt:now()},
+  const sv={dataVersion:'샘플(실데이터 교체 필요)',loadedAt:now()};
+  KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:'샘플(실데이터 교체 필요)',loadedAt:now(),versions:{countryRatings:{...sv},oecdGrades:{...sv},riskIndex:{...sv}}},
    countryRatings:[{country:'미국',grade:'(샘플)A',evaluatedAt:'(샘플)',isSample:true},{country:'베트남',grade:'(샘플)B',evaluatedAt:'(샘플)',isSample:true},{country:'UAE',grade:'(샘플)B',evaluatedAt:'(샘플)',isSample:true}],
    oecdGrades:[{country:'베트남',prevGrade:'(샘플)4',currGrade:'(샘플)3',isSample:true},{country:'UAE',prevGrade:'(샘플)2',currGrade:'(샘플)2',isSample:true}],
    riskIndex:[{country:'미국',industry:'수산식품',ri:'(샘플)RI2',isSample:true},{country:'베트남',industry:'기계·부품',ri:'(샘플)RI3',isSample:true}]};
   ksureSave();
 }
-function ksureClear(){KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null},countryRatings:[],oecdGrades:[],riskIndex:[]};ksureSave();}
+function ksureClear(){KSURE_DATA={meta:{source:'한국무역보험공사 개방데이터 (data.go.kr)',dataVersion:null,loadedAt:null,versions:{}},countryRatings:[],oecdGrades:[],riskIndex:[]};ksureSave();}
 const SAMPLE_BADGE='<span class="dd over">⚠ 샘플 데이터 — 공공데이터포털에서 실데이터 교체 필요</span>';
+let _ksUid=0;
+/* 평가일 정렬 키 — 파싱 실패 시 빈 문자열(목록 끝으로, 제거하지 않음) */
+const ksDateKey=s=>{const m=String(s||'').match(/\d{4}[-./]?\d{0,2}[-./]?\d{0,2}/);return m?m[0].replace(/[./]/g,'-'):'';};
 function ksureInfoHTML(country,cat){
   if(!country)return'';
-  if(!KSURE_DATA.meta.dataVersion)return`<div class="ksbox mut">공공데이터 미탑재 — 사이드바 [데이터 관리]에서 K-SURE 개방데이터(국가신용등급·OECD 등급·RISK INDEX)를 탑재하면 자동 표시됩니다.</div>`;
-  const r=ksureLookup(country);const tag=`<div class="mut" style="font-size:11px;margin-top:6px">출처: K-SURE 개방데이터, ${esc(KSURE_DATA.meta.dataVersion)} 기준${ksureStale()?' <span class="dd soon">⚠ 데이터 갱신 권장(90일 경과)</span>':''}</div>`;
-  const sb=x=>x.isSample?' '+SAMPLE_BADGE:'';
-  const cr=r.cr.length?r.cr.map(x=>`국가신용등급 <b>${esc(x.grade)}</b> (평가 ${esc(x.evaluatedAt||'-')})${sb(x)}`).join('<br>'):'국가신용등급: 해당 데이터 없음(미확인)';
-  const oe=r.oe.length?r.oe.map(x=>{const up=String(x.currGrade)<String(x.prevGrade),dn=String(x.currGrade)>String(x.prevGrade);return`OECD 등급 ${esc(x.prevGrade)} → <b>${esc(x.currGrade)}</b> ${up?'<span style="color:var(--green)">▲ 개선</span>':dn?'<span style="color:var(--red)">▼ 악화</span>':'변동 없음'}${sb(x)}`;}).join('<br>'):'OECD 등급: 해당 데이터 없음(미확인)';
+  if(!ksLoaded())return`<div class="ksbox mut">공공데이터 미탑재 — 사이드바 [데이터 관리]에서 K-SURE 개방데이터(국가신용등급·OECD 등급·RISK INDEX)를 탑재하면 자동 표시됩니다.</div>`;
+  const r=ksureLookup(country);const sb=x=>x.isSample?' '+SAMPLE_BADGE:'';
+  const uid='ksh'+(++_ksUid);
+  /* P6-2 국가신용등급: 최신 1건 기본 표시 + 이력 토글 (데이터는 전부 보존) */
+  const crSorted=[...r.cr].sort((a,b)=>{const A=ksDateKey(a.evaluatedAt),B=ksDateKey(b.evaluatedAt);if(!A&&!B)return 0;if(!A)return 1;if(!B)return -1;return A<B?1:-1;});
+  const crRow=x=>`국가신용등급 <b>${esc(x.grade)}</b> (평가 ${esc(x.evaluatedAt||'-')})${sb(x)}`;
+  const cr=crSorted.length
+    ?crRow(crSorted[0])+' '+ksTag('countryRatings')+(crSorted.length>1
+      ?` <span class="dc" onclick="document.getElementById('${uid}').classList.toggle('hide')">이력 ${crSorted.length-1}건 보기</span>
+         <div id="${uid}" class="hide" style="margin:4px 0 0 10px;padding-left:8px;border-left:2px solid var(--line)">${crSorted.slice(1).map(x=>crRow(x)).join('<br>')}</div>`:'')
+    :'국가신용등급: 해당 데이터 없음(미확인)';
+  /* 표시 데이터셋에 없을 때, 탑재된 OECD 스냅숏(점수 산입과 동일 원본)으로 '비분류'와 '미확인'을 구분해 표기 */
+  const oc=typeof oecdOf==='function'?oecdOf(country):null;
+  const oe=r.oe.length?r.oe.map(x=>{const up=String(x.currGrade)<String(x.prevGrade),dn=String(x.currGrade)>String(x.prevGrade);return`OECD 등급 ${esc(x.prevGrade)} → <b>${esc(x.currGrade)}</b> ${up?'<span style="color:var(--green)">▲ 개선</span>':dn?'<span style="color:var(--red)">▼ 악화</span>':'변동 없음'}${sb(x)} ${ksTag('oecdGrades')}`;}).join('<br>')
+    :(oc?(oc.g!==null?`OECD 국가위험도 <b>${oc.g}등급</b> <span class="mut" style="font-size:11px">(${esc(oecdTag())})</span>`:`OECD 등급: <b>비분류</b>(고소득국 등 — 등급 없음) <span class="mut" style="font-size:11px">(${esc(oecdTag())})</span>`)
+      :'OECD 등급: 해당 데이터 없음(미확인)');
   const riAll=r.ri;const riHit=cat?riAll.filter(x=>String(x.industry).includes(cat)||cat.includes(String(x.industry))):[];
   const riShow=(riHit.length?riHit:riAll).slice(0,4);
-  const ri=riShow.length?riShow.map(x=>`RISK INDEX [${esc(x.industry)}] <b>${esc(x.ri)}</b>${sb(x)}`).join('<br>'):'RISK INDEX(국가×업종): 해당 데이터 없음(미확인)';
-  return`<div class="ksbox">${cr}<br>${oe}<br>${ri}${tag}<div class="mut" style="font-size:11px;margin-top:4px">※ 개별 바이어 신용정보는 개방 데이터에 없습니다 — K-SURE 국외기업 신용조사(신청 기반)로 확인하세요.</div></div>`;
+  const ri=riShow.length?riShow.map(x=>`RISK INDEX [${esc(x.industry)}] <b>${esc(x.ri)}</b>${sb(x)} ${ksTag('riskIndex')}`).join('<br>'):'RISK INDEX(국가×업종): 해당 데이터 없음(미확인)';
+  return`<div class="ksbox">${cr}<br>${oe}<br>${ri}<div class="mut" style="font-size:11px;margin-top:6px">출처: 한국무역보험공사 개방데이터 (data.go.kr) — 기준일은 항목별로 표기</div><div class="mut" style="font-size:11px;margin-top:4px">※ 개별 바이어 신용정보는 개방 데이터에 없습니다 — K-SURE 국외기업 신용조사(신청 기반)로 확인하세요.</div></div>`;
 }
 /* =====================================================================
    OECD 국가위험도 (0~7) — 핵심기능고도화 §0
@@ -779,7 +825,7 @@ function policyViolations(d){
 /* 시작 가이드 상태 (완료는 실제 데이터로 판정) */
 function guideSteps(){return[
  {lb:'회사정보 입력',done:!!PROFILE.name,act:'openSettings()'},
- {lb:'K-SURE 데이터 탑재',done:!!KSURE_DATA.meta.dataVersion,act:"go('data')"},
+ {lb:'K-SURE 데이터 탑재',done:ksLoaded(),act:"go('data')"},
  {lb:'첫 거래 등록',done:deals.some(d=>!d.sample),act:'openNew()'},
  {lb:'거래 안전 점검 실행',done:GUIDE.diag,act:"go('wizard')"},
 ];}
@@ -1126,9 +1172,9 @@ function renderData(){
   const m=KSURE_DATA.meta;
   const hasSample=[...KSURE_DATA.countryRatings,...KSURE_DATA.oecdGrades,...KSURE_DATA.riskIndex].some(x=>x.isSample);
   document.getElementById('ksstatus').innerHTML=`
-    <div style="margin-bottom:10px">${m.dataVersion?`기준일(dataVersion): <b>${esc(m.dataVersion)}</b> · 탑재 ${esc(m.loadedAt||'-')} ${ksureStale()?'<span class="dd soon">⚠ 데이터 갱신 권장(90일 경과)</span>':''}${hasSample?'<br>'+SAMPLE_BADGE:''}`:'<span class="dd over">공공데이터 미탑재</span> — 국가 관련 지표는 표시되지 않습니다.'}</div>
-    <table><thead><tr><th>데이터셋</th><th>건수</th></tr></thead><tbody>
-    ${Object.keys(KS_LABEL).map(k=>`<tr><td>${KS_LABEL[k]}</td><td>${KSURE_DATA[k].length}</td></tr>`).join('')}</tbody></table>
+    <div style="margin-bottom:10px">${ksLoaded()?`데이터셋별 기준일로 관리됩니다.${hasSample?'<br>'+SAMPLE_BADGE:''}`:'<span class="dd over">공공데이터 미탑재</span> — 국가 관련 지표는 표시되지 않습니다.'}</div>
+    <table><thead><tr><th>데이터셋</th><th>건수</th><th>기준일</th><th>탑재</th></tr></thead><tbody>
+    ${KS_KINDS.map(k=>`<tr><td>${KS_LABEL[k]}</td><td>${KSURE_DATA[k].length}</td><td>${ksVer(k)?esc(ksVer(k))+ksStaleBadge(k):'<span class="mut">미탑재</span>'}</td><td class="mut" style="font-size:11.5px">${esc((KSURE_DATA.meta.versions&&KSURE_DATA.meta.versions[k]&&KSURE_DATA.meta.versions[k].loadedAt)||'-')}</td></tr>`).join('')}</tbody></table>
     <div class="mut" style="font-size:11.5px;margin:10px 0">출처: ${esc(m.source)}</div>
     <div style="margin:10px 0;padding-top:10px;border-top:1px solid var(--line);font-size:12.5px">예시 거래: <b>${deals.filter(d=>d.sample).length}건</b> <button class="btn line sm" onclick="loadSamples()">예시 데이터 넣어보기</button> <button class="btn line sm" onclick="removeSamples()">예시 삭제</button></div>
     <div style="display:flex;gap:8px"><button class="btn line sm" onclick="ksureSampleLoad();render();toast('샘플 데이터를 탑재했습니다 — 실데이터로 교체하세요')">데모용 샘플 탑재</button>
@@ -1150,42 +1196,62 @@ function parseCSV(text){
   return{head:split(lines[0]),rows:lines.slice(1).map(split)};
 }
 let _csv=null;
+/* P6-4 인코딩 자동 감지 — UTF-8 해독 결과에 치환문자(U+FFFD)가 있으면 EUC-KR(CP949)로 재시도 */
+function decodeCSV(buf){
+  let enc='UTF-8',txt='';
+  try{txt=new TextDecoder('utf-8').decode(buf);}catch(e){txt='';}
+  if(!txt||txt.indexOf('�')>=0){
+    for(const c of ['euc-kr','windows-949']){
+      try{const t=new TextDecoder(c).decode(buf);if(t.indexOf('�')<0){return{txt:t,enc:'EUC-KR'};}}catch(e){}
+    }
+  }
+  return{txt,enc};
+}
 function ksFile(inp){
   const f=inp.files[0];if(!f)return;
   const type=document.getElementById('ks_type').value;
   const r=new FileReader();
   r.onload=()=>{
-    const p=parseCSV(r.result);
+    const dec=decodeCSV(r.result);
+    const p=parseCSV(dec.txt);
     if(!p){document.getElementById('ksmap').innerHTML='<span class="dd over">파싱 실패 — 헤더+데이터 행이 있는 CSV인지 확인하세요. 저장되지 않았습니다.</span>';inp.value='';return;}
     _csv={type,head:p.head,rows:p.rows};
     const guess=lb=>{const kw={'국가':['국가','country'],'등급':['등급','grade','rating'],'평가일':['평가','기준','일자','date'],'이전 등급':['이전','전','prev'],'현재 등급':['현재','당','curr'],'업종':['업종','산업','industry'],'RISK INDEX':['ri','index','지수','risk']}[lb]||[lb];
       const i=p.head.findIndex(h=>kw.some(k=>h.toLowerCase().includes(k.toLowerCase())));return i;};
     document.getElementById('ksmap').innerHTML=`
-      <div class="mut" style="font-size:12px;margin-bottom:8px">${esc(f.name)} — ${p.rows.length}행 · ${KS_LABEL[type]}로 저장. 각 필드에 해당하는 CSV 컬럼을 지정하세요.</div>
+      <div class="mut" style="font-size:12px;margin-bottom:8px">${esc(f.name)} — ${p.rows.length}행 · ${KS_LABEL[type]}로 저장 · <b>${dec.enc}로 읽었습니다</b>. 각 필드에 해당하는 CSV 컬럼을 지정하세요.</div>
       ${KS_FIELDS[type].map(([k,lb],ix)=>`<div class="row" style="grid-template-columns:120px 1fr;align-items:center;margin-bottom:6px"><label style="margin:0">${lb}</label><select id="ksm_${k}">${p.head.map((h,i)=>`<option value="${i}" ${i===guess(lb)?'selected':''}>${esc(h)}</option>`).join('')}</select></div>`).join('')}
       <div class="row" style="grid-template-columns:120px 1fr;align-items:center"><label style="margin:0">자료 기준일</label><input type="date" id="ksm_ver"></div>
       <button class="btn sm" onclick="ksCommit()">검증 후 저장</button> <span class="mut" style="font-size:11.5px">형식 불일치 시 저장하지 않습니다(부분 저장 금지).</span>`;
     inp.value='';
   };
-  r.readAsText(f,'utf-8');
+  r.readAsArrayBuffer(f);
 }
 function ksCommit(){
   if(!_csv)return;
   const ver=document.getElementById('ksm_ver').value;
   if(!ver){toast('자료 기준일을 입력하세요 — 기준일 없는 외부 정보는 표시할 수 없습니다');return;}
   const map=KS_FIELDS[_csv.type].map(([k])=>[k,Number(document.getElementById('ksm_'+k).value)]);
-  const out=[];
+  const out=[];let skipped=0;
   for(const row of _csv.rows){
     const o={};let bad=false;
     for(const[k,i]of map){const val=(row[i]||'').trim();if(!val){bad=true;break;}o[k]=val;}
-    if(bad){document.getElementById('ksmap').innerHTML='<span class="dd over">형식 불일치 — 빈 값이 있는 행이 있어 저장하지 않았습니다(부분 저장 금지). CSV를 확인하세요.</span>';_csv=null;return;}
+    if(bad){skipped++;continue;} /* P6-4: 빈 값 행은 사용자 확인 후 제외 저장 (건수 공시) */
     out.push(o);
   }
-  KSURE_DATA[_csv.type]=out;
-  KSURE_DATA.meta.dataVersion=ver;KSURE_DATA.meta.loadedAt=now();
+  if(!out.length){document.getElementById('ksmap').innerHTML='<span class="dd over">저장 가능한 행이 없습니다 — 컬럼 지정을 확인하세요. 저장하지 않았습니다.</span>';_csv=null;return;}
+  if(skipped&&!confirm(`빈 값 행 ${skipped}건을 제외하고 ${out.length}건을 저장합니다.\n(제외된 행은 값이 비어 있어 표시·판정에 쓸 수 없습니다)\n계속할까요?`)){
+    document.getElementById('ksmap').innerHTML='<span class="dd soon">저장이 취소되었습니다 — 아무것도 변경되지 않았습니다.</span>';return;
+  }
+  const kind=_csv.type;
+  KSURE_DATA[kind]=out;
+  KSURE_DATA.meta.versions=KSURE_DATA.meta.versions||{};
+  KSURE_DATA.meta.versions[kind]={dataVersion:ver,loadedAt:now()}; /* P6-1: 해당 데이터셋 기준일만 갱신 */
+  KSURE_DATA.meta.dataVersion=ver;KSURE_DATA.meta.loadedAt=now(); /* 하위호환 필드 */
   ksureSave();_csv=null;
-  document.getElementById('ksmap').innerHTML='<span class="badge LOW">저장 완료</span> <span class="mut" style="font-size:12px">'+out.length+'건 탑재되었습니다.</span>';
-  render();toast('K-SURE 데이터가 탑재되었습니다');
+  const msg=`${KS_LABEL[kind]} ${out.length}건 탑재${skipped?` · 빈 값 행 ${skipped}건 제외`:''} (기준일 ${ver})`;
+  document.getElementById('ksmap').innerHTML=`<span class="badge LOW">저장 완료</span> <span class="mut" style="font-size:12px">${esc(msg)}</span>`;
+  render();toast(msg);
 }
 
 /* 규제·공지 자료실 — 큐레이션 링크(수동 갱신, 항목 임의 생성 금지: 빈 상태로 출고) */
@@ -1941,7 +2007,7 @@ function renderAdminConsole(){
     <tr><td>점검 피드백</td><td>도움됨 ${FEEDBACK.yes} · 아니오 ${FEEDBACK.no}</td></tr>
     <tr><td>파일럿 이메일</td><td>${FEEDBACK.emails.length?FEEDBACK.emails.map(e=>esc(e.m)).join('<br>'):'없음'}</td></tr>
     <tr><td>OECD 데이터</td><td>${OECD_LIST.length}개국 · ${esc(OECD_META.dataVersion)} 기준${oecdStaleBadge()}</td></tr>
-    <tr><td>K-SURE 수기 데이터</td><td>${['countryRatings','oecdGrades','riskIndex'].map(k=>KSURE_DATA[k].length).join(' / ')}건 · ${esc(KSURE_DATA.meta.dataVersion||'미탑재')}</td></tr>
+    <tr><td>K-SURE 수기 데이터</td><td>${KS_KINDS.map(k=>`${KS_LABEL[k]} ${KSURE_DATA[k].length}건 (${ksVer(k)||'미탑재'})`).join('<br>')}</td></tr>
     <tr><td>회귀 테스트</td><td>${qa.filter(t=>t.pass).length}/${qa.length} 통과</td></tr></tbody></table>
     <div style="margin-top:10px"><button class="btn line sm" onclick="exportJSON()">전체 집계 JSON 내보내기 (오버레이 포함)</button></div></div>
    <div class="panel"><h2>✏️ 콘텐츠 편집 (허용 목록 한정 — 오버레이 저장, 삭제 시 원본 복원)</h2>
