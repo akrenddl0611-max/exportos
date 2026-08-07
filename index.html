@@ -353,7 +353,7 @@ input,select,textarea{width:100%;padding:9px 11px;border:1px solid #cfd4e0;borde
     </section>
     <!-- CREDIT STATUS -->
     <section id="v-credit" class="hide">
-      <div class="phead"><div><h1>바이어 확인 현황</h1><div class="d">K-SURE 국외기업 신용조사 신청 상태를 바이어별로 추적합니다. 앱이 신용을 추측하지 않습니다.</div></div></div>
+      <div class="phead"><div><h1>바이어 확인 현황</h1><div class="d">K-SURE 국외기업 신용조사 신청 상태를 바이어별로 추적합니다. 앱이 신용을 추측하지 않습니다. 상태 변경은 바이어 상세의 [상세 확인·기록]에서 수행합니다.</div></div></div>
       <div class="panel" id="creditlist"></div>
     </section>
     <!-- RISK WIZARD -->
@@ -779,6 +779,25 @@ function selfTest(){
   const b1=assess({pay:'OA',credit:'NA',amt:30000,insp:false,inco:'FOB',cat:'일반',country:'미수록테스트국'});
   ok('T11 등급 미탑재 국가 → 미확인·산입 0, 나머지 지표로만 판정',b1.score===70&&b1.parts.some(p=>p.k.includes('미확인')&&p.v===0),b1.score+' '+b1.level);
   delete KO2EN['테스트4등급국'];OECD_LIST=savedList;
+  /* B1~B6 — 바이어 보고서 문장 생성 (픽스처 주입, 저장 데이터 무관) */
+  const bfix=(o)=>buyerReport({name:'__B__',country:'미국',cat:'일반',deals:o.deals||[],late:o.late||0,total:0,done:0,credit:'NA'},o);
+  const okS=(name,got,exp)=>T.push({name,pass:got===exp,got:got===exp?'일치':`실제: ${got}`});
+  const dealG={id:-1,stage:0,pay:'LC',score:13,level:'LOW',amt:1000};
+  const dealNoG={id:-2,stage:0,pay:'OA',score:84,level:'HIGH',amt:1000};
+  okS('B1 전건 양호 → 전건 양호 문장',bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:2,late:0,deals:[dealG]}).opinion[0],
+    '확인 항목 전건 양호입니다. 결제·계약 조건 위험은 거래 안전 점검 지표에 따릅니다.');
+  const b2=bfix({req:'applied',grade:'',fraudN:0,oecd:{g:2,st:'ok'},histN:2,late:0,deals:[dealNoG]});
+  okS('B2 미결1(신용조사) → 양호 나열+유지 문장',b2.opinion[0],
+    "공개정보 확인·자사 거래기록은 양호하나, 국외기업 신용조사 확인 전으로 '고위험' 단계를 유지합니다.");
+  okS('B2 셋째 문장(무담보+행1 미결)',b2.opinion[2],
+    `현재 결제조건(무담보 ${PAY.OA})을 감안할 때, 신용조사 결과 확인 전 추가 여신성 조건 확대는 권고하지 아니합니다.`);
+  okS('B3 위험1(지연 이력) → 위험 문장',bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:2,late:1,deals:[dealG]}).opinion[0],
+    '자사 거래기록에서 위험 요인이 확인되어 거래 조건 강화 검토가 필요합니다.');
+  okS('B4 미결2 → 유보 문장',bfix({req:'none',grade:'',fraudN:1,oecd:{g:2,st:'ok'},histN:2,late:0,deals:[dealG]}).opinion[0],
+    '확인 미결 항목 2건으로 판단을 유보합니다. 확인 완료 후 재산정을 권고합니다.');
+  ok('B5 신규 바이어 → 행3 미결·이력 없음',bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:0,late:0,deals:[dealG]}).v3==='p','v3='+bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:0,late:0,deals:[dealG]}).v3);
+  const b6=bfix({req:'received',grade:'A',fraudN:0,oecd:null,histN:2,late:0,deals:[dealG]});
+  ok('B6 OECD 미탑재 → 행2 미결(양호 미표기)',b6.v2==='p','v2='+b6.v2);
   RULES_OFF=savedOff;
   window._qa=T;
   const fail=T.filter(x=>!x.pass);
@@ -837,28 +856,121 @@ function buyerList(){
   return Object.values(map).map(b=>{
     const last=b.deals[0];
     const late=b.deals.filter(x=>(x.tasks||[]).some(t=>t.title.includes('대금 미회수'))).length;
-    return{name:b.name,country:last.country,cat:last.cat,credit:last.credit,deals:b.deals,late,done:b.deals.filter(x=>x.stage===5).length,req:(BUYER_META[b.name]||{}).req||'none'};
+    return{name:b.name,country:last.country,cat:last.cat,credit:last.credit,deals:b.deals,late,done:b.deals.filter(x=>x.stage===5).length,total:b.deals.reduce((s,x)=>s+(x.amt||0),0),req:(BUYER_META[b.name]||{}).req||'none'};
   }).sort((a,b)=>a.name.localeCompare(b.name));
 }
 function bmHist(name,msg){const m=BUYER_META[name]=BUYER_META[name]||{};(m.history=m.history||[]).unshift({t:now(),msg});}
+const REQ_LB={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
+const reqOf=name=>(BUYER_META[name]||{}).req||'none';
+const REQ_RANK={none:0,applied:1,received:2};
 function setBuyerReq(name,val){
-  const lb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val;
-  BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].req=val;
+  const lb=REQ_LB[val]||val;
+  const m=BUYER_META[name]=BUYER_META[name]||{};m.req=val;
+  if(val==='applied'&&!m.appliedAt)m.appliedAt=iso();
+  if(val==='received'&&!m.receivedAt)m.receivedAt=iso();
   bmHist(name,'K-SURE 신용조사 상태 변경: '+lb);
   const d=deals.find(x=>String(x.buyer).trim()===name);if(d){logIt(d,'신용조사 상태 변경('+name+'): '+lb);}
+  if(val!=='received')enforceCreditIntegrity(name); /* §2-5: 결과 수신이 아니면 등급 보유 불가 */
   uiSave();save();render();
 }
+/* §2-5 정합성: 조사 결과 미기록(req!=='received') 바이어의 거래 등급을 '미확인'으로 되돌림.
+   판정 함수(assess)는 건드리지 않고 입력·저장 계층에서만 강제한다. 반환=조정 건수 */
+function enforceCreditIntegrity(onlyName){
+  let n=0;
+  deals.forEach(d=>{
+    const nm=String(d.buyer||'').trim();
+    if(onlyName&&nm!==onlyName)return;
+    if(reqOf(nm)==='received')return;
+    if(['A','B','C','D'].includes(d.credit)){
+      const prev=d.credit;d.credit='NA';
+      const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);
+      logIt(d,`신용확인 상태 정합성 조정: ${prev} → 미확인(조사 결과 미기록)`);n++;
+    }
+  });
+  return n;
+}
 /* 신용조사 결과 수신 시 — 수기 입력한 결과를 해당 바이어의 진행 거래 위험 지표에 반영 */
-function applyBuyerGrade(name,grade){
+function applyBuyerGrade(name,grade,silent){
   if(!grade)return;
+  if(reqOf(name)!=='received'){if(!silent)toast('결과 수신 상태에서만 등급을 기록할 수 있습니다');return;} /* §2-5-2 유일 입력 경로 */
   BUYER_META[name]=BUYER_META[name]||{};BUYER_META[name].grade=grade;
   bmHist(name,'신용조사 결과 수기 입력: '+grade+' — 진행 거래 재진단');
   deals.filter(x=>String(x.buyer).trim()===name&&x.stage<5).forEach(d=>{
     d.credit=grade;const a=assess(d);d.score=a.score;d.level=a.level;d.recs=a.recs;syncRiskTasks(d);
     logIt(d,'신용조사 결과 반영: 신용확인 상태 '+grade);
   });
-  uiSave();save();render();toast('조사 결과가 위험 지표에 반영되었습니다');
+  uiSave();save();if(!silent){render();toast('조사 결과가 위험 지표에 반영되었습니다');}
 }
+/* §2-3 마이그레이션(멱등): 거래별 d.creditReq → 바이어 단일 원천 BUYER_META[name].req */
+function migrateCreditReq(){
+  let moved=0;
+  deals.forEach(d=>{
+    if(!('creditReq' in d))return;
+    const nm=String(d.buyer||'').trim(),cur=reqOf(nm),val=d.creditReq||'none';
+    const win=REQ_RANK[val]>REQ_RANK[cur]?val:cur; /* 충돌 시 더 진행된 상태 채택 */
+    const m=BUYER_META[nm]=BUYER_META[nm]||{};m.req=win;
+    if(val!==cur)logIt(d,`신청 상태 통합 이관: 거래(${REQ_LB[val]||val}) + 바이어(${REQ_LB[cur]}) → ${REQ_LB[win]}`);
+    else logIt(d,`신청 상태 통합 이관: ${REQ_LB[win]}`);
+    bmHist(nm,`신청 상태 통합 이관 → ${REQ_LB[win]}`);
+    delete d.creditReq;moved++;
+  });
+  if(moved){uiSave();save();}
+  return moved;
+}
+/* =====================================================================
+   바이어 보고서 엔진 (§D 종합 의견 · §E 권고 조치) — 전부 결정론 템플릿
+   opts로 픽스처 주입 가능(테스트 B1~B6). LLM·자유 작문 경로 없음
+===================================================================== */
+const DISCLAIMER_BUYER='본 요약은 입력 정보와 공개 데이터에 기반한 참고자료로서, 신용평가·여신심사·보험인수 판단에 해당하지 않습니다. 신용조사·보험·법률 판단은 K-SURE·은행·변호사가 수행합니다.';
+const SUBJ={
+  credit:'확인 주체: 한국무역보험공사(K-SURE) — 본 시스템은 신청 안내 및 결과 기록만 수행합니다.',
+  open:'확인 주체: 해당 없음 — 공개된 사실의 표시이며 평가 행위가 아닙니다.',
+  own:'확인 주체: 당사 — 자사 원장의 결정론 집계이며 제3자 신용평가에 해당하지 않습니다.'
+};
+const ROW_NAME={credit:'국외기업 신용조사',open:'공개정보 확인',own:'자사 거래기록'};
+const VERD_LB={g:'양호',p:'미결',r:'위험'};
+const creditPts=c=>c==='D'?35:c==='C'?25:c==='NA'?20:c==='B'?8:0;
+function buyerReport(b,opts){
+  const o=opts||{};
+  const req=o.req!==undefined?o.req:reqOf(b.name);
+  const grade=o.grade!==undefined?o.grade:((BUYER_META[b.name]||{}).grade||'');
+  const actv=o.actv!==undefined?o.actv:(b.deals||[]).find(x=>x.stage<5);
+  const fraudN=o.fraudN!==undefined?o.fraudN:((actv&&actv.fraud)||[]).filter(Boolean).length;
+  const oecd=o.oecd!==undefined?o.oecd:(typeof oecdOf==='function'?oecdOf(b.country):null);
+  const late=o.late!==undefined?o.late:(b.late||0);
+  const histN=o.histN!==undefined?o.histN:((b.deals||[]).length);
+  /* 행별 판정 */
+  const v1=(req==='received'&&['A','B'].includes(grade))?'g':(req==='received'&&['C','D'].includes(grade))?'r':'p';
+  const v2=fraudN>=1?'p':(oecd?'g':'p');
+  const v3=histN?(late>=1?'r':'g'):'p';
+  const rows=[{k:'credit',v:v1},{k:'open',v:v2},{k:'own',v:v3}];
+  const gn=rows.filter(x=>x.v==='g').length,pn=rows.filter(x=>x.v==='p').length,rn=rows.filter(x=>x.v==='r').length;
+  /* 대표 판정(진행 거래 중 최고 위험) */
+  const rep=(b.deals||[]).filter(x=>x.stage<5).sort((a,c)=>(c.score||0)-(a.score||0))[0]||null;
+  const repLabel=rep?relabel(rep.level):'유보';
+  /* §D 종합 의견 — 아래 4분기 외 문장 생성 경로 없음 */
+  const nm=k=>ROW_NAME[k];
+  let s1;
+  if(rn>=1)s1=`${nm(rows.find(x=>x.v==='r').k)}에서 위험 요인이 확인되어 거래 조건 강화 검토가 필요합니다.`;
+  else if(pn>=2)s1=`확인 미결 항목 ${pn}건으로 판단을 유보합니다. 확인 완료 후 재산정을 권고합니다.`;
+  else if(pn===1)s1=`${rows.filter(x=>x.v==='g').map(x=>nm(x.k)).join('·')}은 양호하나, ${nm(rows.find(x=>x.v==='p').k)} 확인 전으로 '${repLabel}' 단계를 유지합니다.`;
+  else s1='확인 항목 전건 양호입니다. 결제·계약 조건 위험은 거래 안전 점검 지표에 따릅니다.';
+  const s2=`판정 근거 — 확인 항목 3건 중 양호 ${gn}건, 미결 ${pn}건, 위험 ${rn}건.`;
+  const noG=rep&&['OA','TT_A','DA'].includes(rep.pay);
+  const s3=(noG&&v1==='p')?`현재 결제조건(무담보 ${PAY[rep.pay]})을 감안할 때, 신용조사 결과 확인 전 추가 여신성 조건 확대는 권고하지 아니합니다.`:'';
+  /* §E 권고 조치 — 위에서부터 최대 3건 */
+  const overdue=(b.deals||[]).filter(x=>x.due&&x.stage<5&&dday(x.due)<0);
+  const recs=[];
+  if(overdue.length)recs.push({t:'지연 대금 회수 조치 — 결제 리마인드 문안 발송(수동)',why:`만기 경과 거래 ${overdue.length}건. 회수 지연은 최우선 조치 대상입니다.`,btn:'문안 열기',act:`qpGo(${overdue[0].id},'회수 시뮬레이터')`});
+  if(v3==='r')recs.push({t:'재거래 조건 강화 검토 — 선수금 확보 또는 수출보험 가입',why:`과거 회수 지연 ${late}건. 무담보 재거래 전 조건 보완이 필요합니다.`,btn:'검토하기',act:rep?`qpGo(${rep.id},'회수 시뮬레이터')`:''});
+  if(req==='received'&&!grade)recs.push({t:'K-SURE 신용조사 결과 확인 및 등급 기록',why:'결과 기록 시 위험 지표가 재산정됩니다.',btn:'결과 기록',act:'bOpenAcc(0)'});
+  if(req==='applied')recs.push({t:'K-SURE 신용조사 결과 확인',why:`미결 항목이 본 건 ${pn}건이며,${noG?' 무담보 조건에서 우선 확인이 필요합니다.':''}`,btn:'상태 확인',act:'bOpenAcc(0)'});
+  if(req==='none'&&(noG||!histN))recs.push({t:'K-SURE 국외기업 신용조사 신청',why:'공인기관 확인 전 상태입니다.',btn:'신청 안내',act:'bOpenAcc(0)'});
+  if(fraudN>=2)recs.push({t:'바이어 검증 강화 — 기업등록부·레퍼런스 재확인',why:`사기 의심 신호 ${fraudN}건 (단정 아님).`,btn:'등록부 열기',act:'bOpenAcc(2)'});
+  return{rows,gn,pn,rn,v1,v2,v3,req,grade,fraudN,oecd,late,histN,rep,repLabel,actv,
+    opinion:[s1,s2,s3].filter(Boolean),recs:recs.slice(0,3)};
+}
+
 /* 공개 기업등록부 — 실존 확인된 공식 레지스트리만 수록 (임의 URL 생성 금지) */
 const REGISTRIES=[
  {country:'영국',name:'Companies House',url:'https://find-and-update.company-information.service.gov.uk',note:'영국 법인 등기 공식 조회'},
@@ -1352,40 +1464,79 @@ function renderBuyers(){
   const b=bs.find(x=>x.name===curBuyer);
   const bd=document.getElementById('bdetail');
   if(!b){bd.innerHTML='<div class="empty">바이어를 선택하세요.</div>';return;}
-  const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
   const nm=esc(b.name).replace(/'/g,"\\'");
   const regs=registriesFor(b.country);
   const meta=BUYER_META[b.name]||{};
-  const actv=b.deals.find(x=>x.stage<5);
-  bd.innerHTML=`<h2>${esc(b.name)} <span class="pill">${esc(b.country)}</span><span class="pill">${b.cat}</span></h2>
-   <label>내부 거래이력 점수 (결정론 — 당사 원장 ${b.deals.length}건 기준)</label>
-   <div class="ksbox">완료 ${b.done}건 · 회수 지연 경험 <b>${b.late}건</b>${b.late?' — 재거래 시 선수금·수출보험 가입 조건 강화 검토':''}<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 (내부 데이터). 외부 지급능력 판단은 K-SURE 신용조사로 확인하세요.</div></div>
-   <h2 style="font-size:14.5px;margin:16px 0 8px">🔍 통합 바이어 조사 패널</h2>
-   <label>① 개방 데이터 자동 표시 (국가·업종 기준)</label>
-   ${ksureInfoHTML(b.country,b.cat)||'<div class="mut" style="font-size:12.5px;margin-bottom:10px">국가 정보가 없습니다.</div>'}
-   <label>② K-SURE 국외기업 신용조사 (개별 바이어 정보는 신청 기반 — 검색으로 조회되지 않습니다)</label>
-   <div class="ksbox"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-    <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">신청 안내 ↗</a>
-    <select style="width:auto" onchange="setBuyerReq('${nm}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select>
-    ${b.req==='received'?`<span class="mut" style="font-size:12px">결과 등급 입력 →</span><select style="width:auto" onchange="applyBuyerGrade('${nm}',this.value)">${opt(['','A','B','C','D'],['— 선택 —','A (양호)','B (보통)','C (주의)','D (위험)'],meta.grade||'')}</select>`:''}
-   </div><div class="mut" style="font-size:11px;margin-top:6px">현재 신용확인 상태(최근 거래): <b>${b.credit==='NA'?'미확인(조사 전)':b.credit}</b> — 결과 입력 시 진행 거래 위험 지표에 반영되고 활동 로그에 기록됩니다.</div></div>
-   <label>③ 공개 기업등록부 (실존 공식 레지스트리)</label>
-   ${regs.length?`<div class="links">${regs.map(r=>r.url?`<a href="${r.url}" target="_blank" rel="noopener"><span>${esc(r.name)}<div class="mut" style="font-weight:400;font-size:11.5px">${esc(r.note)}</div></span><span>↗</span></a>`:`<div style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:13px"><b>${esc(r.name)}</b><div class="mut" style="font-size:11.5px">${esc(r.note)}</div></div>`).join('')}</div>`
-   :`<div class="ksbox mut">해당 국가의 공식 등록부 정보 없음 — <a href="https://www.kotra.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">KOTRA 해외무역관 확인 권장 ↗</a></div>`}
-   <label>④ 무역사기 패턴 대조 <span class="pill">KOTRA 유형 기반</span>${actv?`<span class="pill">${esc(actv.item)} 거래 기준</span>`:''}</label>
-   ${actv?FRAUD_CHECKS.map((q,i)=>`<div class="trow"><input type="checkbox" ${(actv.fraud||[])[i]?'checked':''} onchange="toggleFraud(${actv.id},${i});renderBuyers()"><span class="tt" style="font-size:12.5px">${esc(q)}</span></div>`).join('')+((actv.fraud||[]).filter(Boolean).length?`<div class="warnbar" style="margin-top:6px">사기 의심 신호 ${(actv.fraud||[]).filter(Boolean).length}개 — 주의 (단정 아님, 검증 강화 권장)</div>`:'')
-   :'<div class="mut" style="font-size:12.5px">진행 중 거래가 없어 점검 대상이 없습니다.</div>'}
-   <label style="margin-top:12px">⑤ 조사 이력 아카이브</label>
-   <div class="log">${(meta.history||[]).map(h=>`<div>${h.t} — ${esc(h.msg)}</div>`).join('')||'<div class="mut">조사 이력이 없습니다.</div>'}</div>
-   <label style="margin-top:14px">거래 이력</label>${tbl(b.deals)}
-   <div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`;
+  const R=buyerReport(b);
+  const actv=R.actv,rep=R.rep;
+  const stamp=v=>`<span class="badge ${v==='g'?'LOW':v==='r'?'HIGH':'MED'}">${VERD_LB[v]}</span>`;
+  const money=x=>'$'+Number(x||0).toLocaleString();
+  /* 행1 진행 표시 — 미신청 → 신청함 → 결과 수신 → 등급 기록 */
+  const step=R.grade?3:R.req==='received'?2:R.req==='applied'?1:0;
+  const stepLb=['미신청','신청함'+(meta.appliedAt?' '+String(meta.appliedAt).slice(5).replace('-','.'):''),'결과 수신','등급 기록'];
+  const prog=`<div style="display:flex;gap:4px;margin:6px 0">${stepLb.map((s,i)=>`<div style="flex:1"><div style="height:5px;border-radius:3px;background:${i<=step?'var(--pri)':'#e3e6ef'}"></div><div class="mut" style="font-size:10.5px;margin-top:3px">${esc(s)}</div></div>`).join('')}</div>`;
+  /* 행2 본문 3줄 */
+  const oecdLine=R.oecd?(R.oecd.g!==null?`국가위험도: OECD ${R.oecd.g}등급 <span class="mut" style="font-size:11px">(${esc(oecdTag())})</span>`:`국가위험도: 비분류(등급 없음) <span class="mut" style="font-size:11px">(${esc(oecdTag())})</span>`):'국가위험도: 미확인(데이터 미탑재)';
+  const regLine=regs.length&&regs[0].url?`법인 실재: ${esc(regs[0].name)}에서 확인 가능`:regs.length?`법인 실재: ${esc(regs[0].name)} — ${esc(regs[0].note)}`:'법인 실재: 공식 등록부 미수록 — KOTRA 해외무역관 확인 권장';
+  /* 행3 본문 */
+  const recent=b.deals.slice(0,5).map(d=>`<span class="pill">${d.due?esc(String(d.due).slice(0,7)):'-'} · ${money(d.amt)} · ${d.stage===5?'완료':STAGES[d.stage]}</span>`).join('');
+  bd.innerHTML=`
+   <div class="phead" style="margin-bottom:14px"><div><h1 style="font-size:19px">${esc(b.name)}</h1>
+     <div style="margin-top:5px"><span class="pill">${esc(b.country)}</span><span class="pill">${esc(b.cat)}</span><span class="pill">${rep?money(rep.amt)+' · '+PAY[rep.pay]:'진행 거래 없음'}</span><span class="pill">확인 기준 ${now()}</span></div></div>
+     ${rep?`<span class="badge ${rep.level}">${relabel(rep.level)} ${rep.score}</span>`:''}</div>
+
+   <div class="panel"><h2>📄 종합 판단</h2>
+    <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+     <div style="min-width:150px;text-align:center;border-radius:11px;padding:14px 16px;background:${rep?(rep.level==='HIGH'?'var(--red-l)':rep.level==='MED'?'var(--amber-l)':'var(--green-l)'):'#eef1f7'}">
+      <div style="font-size:19px;font-weight:800">${rep?relabel(rep.level):'유보'}</div>
+      <div class="mut" style="font-size:11px;margin-top:2px">거래 위험 참고 지표</div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px">${rep?rep.score+'점 / 126':'진행 거래 없음'}</div></div>
+     <div style="flex:1;min-width:240px;font-size:13.5px;line-height:1.75">${R.opinion.map(s=>`<div>${esc(s)}</div>`).join('')}</div>
+    </div></div>
+
+   <div class="panel"><h2>🔍 확인 항목별 현황</h2>
+    ${[
+      {k:'credit',body:`${prog}<div style="font-size:12.5px">결과 등급 기록 시 '바이어 이력' 지표에 반영됩니다 (현행 ${creditPts(b.credit)}점 → 예: B등급 +${creditPts('B')}점).</div>`,src:'출처: K-SURE 국외기업 신용조사(신청 기반)'},
+      {k:'open',body:`<div style="font-size:12.5px;line-height:1.8">${oecdLine}<br>사기 대조: ${R.fraudN}/${FRAUD_CHECKS.length} — 해당 항목이 있어도 단정이 아닌 검증 강화 사유로 취급합니다<br>${regLine}</div>`,src:'출처: '+esc(oecdTag())},
+      {k:'own',body:`<div style="font-size:12.5px">거래 ${b.deals.length}건(누적 ${money(b.total)}) 완료 ${b.done}건 · 회수 지연 ${b.late}건</div><div style="margin-top:5px">${recent||'<span class="mut" style="font-size:12px">거래 이력 없음</span>'}</div>`,src:`근거: 당사 원장 ${b.deals.length}건 (내부 데이터)`}
+     ].map(r=>{const v=R.rows.find(x=>x.k===r.k).v;
+      return `<div style="border-top:1px solid var(--line);padding:12px 0">
+       <div style="display:flex;gap:9px;align-items:center"><span>${stamp(v)}</span><b style="font-size:13.5px">${ROW_NAME[r.k]}</b>${r.k==='own'&&!b.deals.length?'<span class="mut" style="font-size:12px">거래 이력 없음 — 내부 정보로 판단 불가</span>':''}</div>
+       <div class="mut" style="font-size:11px;margin:4px 0 7px">${SUBJ[r.k]}</div>
+       ${r.body}
+       <div class="mut" style="font-size:11px;margin-top:6px">${r.src}</div></div>`;}).join('')}
+   </div>
+
+   <div class="panel"><h2>✅ 권고 조치</h2>
+    ${R.recs.length?R.recs.map((r,i)=>`<div style="display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:${i?'1px solid var(--line)':'0'}">
+      <span style="width:22px;height:22px;border-radius:50%;background:var(--pri-l);color:var(--pri-d);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</span>
+      <div style="flex:1"><div style="font-size:13.5px;font-weight:600">${esc(r.t)}</div><div class="mut" style="font-size:11.5px;margin-top:2px">${esc(r.why)}</div></div>
+      ${r.act?`<button class="btn ghost sm" onclick="${r.act}">${esc(r.btn)}</button>`:''}</div>`).join('')
+     :'<div class="mut" style="font-size:13px">현 시점 우선 조치 없음</div>'}</div>
+
+   <div class="panel"><h2>🧰 상세 확인·기록</h2>
+    <div class="mut" style="font-size:12px;margin:-6px 0 10px">필요할 때만 펼치세요 — 위 보고서의 원천 데이터입니다</div>
+    ${[
+      {t:'신용조사 상태 관리',body:`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">신청 안내 ↗</a>
+        <select style="width:auto" onchange="setBuyerReq('${nm}',this.value)">${opt(['none','applied','received'],Object.values(REQ_LB),R.req)}</select>
+        ${R.req==='received'?`<span class="mut" style="font-size:12px">결과 등급 기록 →</span><select style="width:auto" onchange="applyBuyerGrade('${nm}',this.value)">${opt(['','A','B','C','D'],['— 선택 —','A (양호)','B (보통)','C (주의)','D (위험)'],R.grade)}</select>`:'<span class="mut" style="font-size:11.5px">등급 기록은 결과 수신 상태에서만 가능합니다</span>'}
+       </div><div class="mut" style="font-size:11px;margin-top:6px">신청 상태 변경·등급 기록은 이 화면에서만 수행합니다. 등급 기록 시 진행 거래가 재진단되고 활동 로그에 기록됩니다.</div>`},
+      {t:'무역사기 패턴 대조',body:actv?FRAUD_CHECKS.map((q,i)=>`<div class="trow"><input type="checkbox" ${(actv.fraud||[])[i]?'checked':''} onchange="toggleFraud(${actv.id},${i});renderBuyers()"><span class="tt" style="font-size:12.5px">${esc(q)}</span></div>`).join('')+(R.fraudN?`<div class="warnbar" style="margin-top:6px">사기 의심 신호 ${R.fraudN}건 — 단정이 아닌 검증 강화 사유입니다</div>`:''):'<div class="mut" style="font-size:12.5px">진행 중 거래가 없어 점검 대상이 없습니다.</div>'},
+      {t:'공개 기업등록부·개방 데이터',body:(regs.length?`<div class="links">${regs.map(r=>r.url?`<a href="${r.url}" target="_blank" rel="noopener"><span>${esc(r.name)}<div class="mut" style="font-weight:400;font-size:11.5px">${esc(r.note)}</div></span><span>↗</span></a>`:`<div style="padding:11px 13px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:13px"><b>${esc(r.name)}</b><div class="mut" style="font-size:11.5px">${esc(r.note)}</div></div>`).join('')}</div>`:`<div class="ksbox mut">해당 국가의 공식 등록부 정보 없음 — <a href="https://www.kotra.or.kr" target="_blank" rel="noopener" style="text-decoration:underline">KOTRA 해외무역관 확인 권장 ↗</a></div>`)+(ksureInfoHTML(b.country,b.cat)||'')},
+      {t:'조사 이력 아카이브·거래 이력',body:`<div class="log">${(meta.history||[]).map(h=>`<div>${h.t} — ${esc(h.msg)}</div>`).join('')||'<div class="mut">조사 이력이 없습니다.</div>'}</div><div style="margin-top:10px">${tbl(b.deals)}</div>`}
+     ].map((a,i)=>`<div class="sacc"><div class="hd" onclick="bOpenAcc(${bAcc===i?-1:i})"><span>${a.t}</span><span style="margin-left:auto;color:#98a0b3">${bAcc===i?'▾':'▸'}</span></div>${bAcc===i?`<div class="bd">${a.body}</div>`:''}</div>`).join('')}
+   </div>
+   <div class="mut" style="font-size:12px">${DISCLAIMER_BUYER}</div>`;
 }
+let bAcc=-1;
+function bOpenAcc(i){bAcc=i;renderBuyers();const el=document.getElementById('bdetail');if(el&&i>=0)el.scrollIntoView({block:'end'});}
 function renderCredit(){
-  const bs=buyerList();const reqLb={none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'};
+  const bs=buyerList();
+  const badge=r=>r==='received'?'<span class="badge LOW">결과 수신</span>':r==='applied'?'<span class="badge MED">신청함(결과 대기)</span>':'<span class="badge HIGH" style="background:#eef1f7;color:#667">미신청</span>';
   document.getElementById('creditlist').innerHTML=bs.length?`<table><thead><tr><th>바이어</th><th>국가</th><th>신용확인 상태</th><th>신청 상태</th><th></th></tr></thead><tbody>
-   ${bs.map(b=>`<tr><td><b>${esc(b.name)}</b></td><td>${esc(b.country)}</td><td>${b.credit==='NA'?'<span class="dd soon">미확인</span>':b.credit}</td>
-   <td><select style="width:auto" onchange="setBuyerReq('${esc(b.name).replace(/'/g,"\\'")}',this.value)">${opt(['none','applied','received'],Object.values(reqLb),b.req)}</select></td>
-   <td><span class="dc" onclick="curBuyer='${esc(b.name).replace(/'/g,"\\'")}';go('buyers');renderBuyers()">상세</span></td></tr>`).join('')}</tbody></table><div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`
+   ${bs.map(b=>{const nm=esc(b.name).replace(/'/g,"\\'");return `<tr class="r" onclick="curBuyer='${nm}';go('buyers');renderBuyers()"><td><b>${esc(b.name)}</b></td><td>${esc(b.country)}</td><td>${b.credit==='NA'?'<span class="dd soon">미확인</span>':esc(b.credit)}</td>
+   <td>${badge(b.req)}</td><td><span class="dc">상세 →</span></td></tr>`;}).join('')}</tbody></table><div class="mut" style="font-size:12px;margin-top:10px">${DISCLAIMER}</div>`
    :emptyBox('🔎','추적할 바이어가 없습니다.','신규 거래','openNew()');
 }
 /* 간편 점검 (5필드 — 바이어·국가·금액·결제방식·선수금) */
@@ -1715,7 +1866,7 @@ function formSheet(d){
     <div class="row"><div><label>품목 (HS부호 병기 권장)</label><input id="m_item" value="${esc(d.item||(d.id?'':PROFILE.item||''))}" placeholder="예: 화장품(3304), 기계부품(8409), 마른김(1212)"></div><div><label>품목 카테고리</label><select id="m_cat" onchange="renderKsForm()">${opt(CATS,CATS,d.cat||PROFILE.cat||'일반')}</select></div></div>
     <div class="row"><div><label>바이어명</label><input id="m_buyer" value="${esc(d.buyer||'')}"></div><div><label>수입국</label><input id="m_country" value="${esc(d.country||'')}" placeholder="미국" oninput="renderKsForm()"></div></div>
     <div id="m_ksinfo">${ksureInfoHTML(d.country||'',d.cat||'')}</div>
-    <div class="row"><div><label>거래금액 (USD)</label><input id="m_amt" type="number" value="${d.amt||''}"></div><div><label>신용확인 상태 (K-SURE 국외기업 신용조사)</label><select id="m_credit">${opt(['A','B','C','D','NA'],['A (조사 완료·양호)','B (조사 완료·보통)','C (조사 완료·주의)','D (조사 완료·위험)','미확인 (조사 전)'],d.credit||'NA')}</select></div></div>
+    <div class="row"><div><label>거래금액 (USD)</label><input id="m_amt" type="number" value="${d.amt||''}"></div><div><label>신용확인 상태 (K-SURE 국외기업 신용조사)</label><select id="m_credit">${opt(['NA'],['미확인 (조사 전)'],'NA')}</select><div class="mut" style="font-size:11px;margin-top:4px">K-SURE 조사 결과를 받으셨다면 바이어 화면에서 등급을 기록하세요. 결과 기록 시 이 거래가 자동 재진단됩니다.</div></div></div>
     <div class="row"><div><label>결제방식</label><select id="m_pay">${opt(Object.keys(PAY),Object.values(PAY),d.pay||'OA')}</select></div><div><label>인코텀즈 (Incoterms 2020)</label><select id="m_inco">${opt(['','EXW','FOB','CFR','CIF','DAP','DDP'],['— 미선택 —','EXW','FOB','CFR','CIF','DAP','DDP'],d.inco||'')}</select></div></div>
     <div class="row"><div><label>결제 만기일 (회수 예정)</label><input id="m_due" type="date" value="${d.due||''}"></div><div style="display:flex;flex-direction:column;gap:8px;justify-content:flex-end"><label class="chk"><input type="checkbox" id="m_insp" ${d.insp?'checked':''}> 검사조항·클레임 기한 명시</label><label class="chk"><input type="checkbox" id="m_newmkt" ${d.newmkt?'checked':''}> 신규 수입국 (첫 거래)</label></div></div>
     <div style="display:flex;gap:8px"><button class="btn" onclick="saveDeal()">${d.id?'저장 및 재진단':'진단 및 등록'}</button><button class="btn line" onclick="closeSheet()">취소</button>${d.id?`<button class="btn red" style="margin-left:auto" onclick="delDeal(${d.id})">삭제</button>`:''}</div>
@@ -1826,7 +1977,7 @@ function detailTab(d){
         <div class="mut" style="font-size:10.5px;margin-top:4px">이 브라우저에만 저장되며 자동 전송되지 않습니다(내보내기에 포함).</div></div>
       <label>바이어 판단 근거 (내부/외부 분리)</label>
       ${hist?`<div class="ksbox">재거래 바이어 — <b>내부 거래이력</b> 기준: 당사 원장 ${hist.n}건(완료 ${hist.done}건, 회수 지연 경험 ${hist.late}건)<div class="mut" style="font-size:11px;margin-top:4px">근거: 당사 원장 ${hist.n}건 기준 (내부 데이터)</div></div>`
-      :`<div class="ksbox"><b>신규 거래처</b> — 내부 정보만으로는 상대방 실체·지급능력을 판단할 수 없습니다.<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 신청 안내 ↗</a><select style="width:auto" onchange="setCreditReq(${id},this.value)">${opt(['none','applied','received'],['신용조사 미신청','신청함(결과 대기)','결과 수신'],d.creditReq||'none')}</select></div></div>`}
+      :`<div class="ksbox"><b>신규 거래처</b> — 내부 정보만으로는 상대방 실체·지급능력을 판단할 수 없습니다.<div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap"><a class="btn ghost sm" href="https://www.ksure.or.kr" target="_blank" rel="noopener">K-SURE 국외기업 신용조사 신청 안내 ↗</a><span class="pill">신청 상태: ${REQ_LB[reqOf(String(d.buyer||'').trim())]}</span><span class="dc" onclick="curBuyer='${esc(d.buyer).replace(/'/g,"\\'")}';closeSheet();go('buyers');renderBuyers()">바이어 화면에서 관리 →</span></div></div>`}
       <label>수입국 참고 데이터 (K-SURE 개방데이터)</label>
       ${ksureInfoHTML(d.country,d.cat)||'<div class="mut" style="font-size:13px">수입국이 입력되지 않았습니다.</div>'}
       <label style="margin-top:14px">무역사기 패턴 대조 <span class="pill">KOTRA 무역사기 유형 기반</span></label>
@@ -1924,7 +2075,6 @@ function detailTab(d){
 }
 function saveNotes(id){const d=deals.find(x=>x.id===id);d.notes=document.getElementById('d_notes').value;save();}
 function toggleFraud(id,i){const d=deals.find(x=>x.id===id);d.fraud=d.fraud||[];d.fraud[i]=!d.fraud[i];logIt(d,(d.fraud[i]?'사기 신호 체크: ':'사기 신호 해제: ')+FRAUD_CHECKS[i].slice(0,30));save();renderDetail(id);}
-function setCreditReq(id,val){const d=deals.find(x=>x.id===id);d.creditReq=val;logIt(d,'신용조사 신청 상태: '+({none:'미신청',applied:'신청함(결과 대기)',received:'결과 수신'}[val]||val));save();renderDetail(id);}
 /* ===== 관리자 모드 (시연 통제 장치 — 정적 사이트 특성상 개발자 도구로 우회 가능함을 전제) =====
    목적: 심사·시연 자리에서 잠김 기능을 열어 보여주는 통제권. 사용자 화면에는 해제 경로 없음 */
 const ADMIN_CODE='Dmlgus2834964'; /* ⚠ 대표가 배포 전 직접 치환할 것 — 커밋·문서에 실코드 금지 */
@@ -2121,7 +2271,7 @@ function setSim(id,k,val){const d=deals.find(x=>x.id===id);d.sim=d.sim||{adv:0,c
 function copyDun(id,stage,lang){const d=deals.find(x=>x.id===id);const t=dunText(stage,d)[lang];copyText(t);logIt(d,`회수 문안 복사 (${stage}·${lang==='kr'?'국문':'영문'})`);save();toast('문안이 복사되었습니다 — 발송은 직접 진행하세요');}
 function delDeal(id){if(confirm('이 거래를 삭제할까요?')){deals=deals.filter(x=>x.id!==id);closeSheet();render();toast('삭제되었습니다');}}
 function copyText(t){
-  try{navigator.clipboard.writeText(t);return;}catch(e){}
+  try{const p=navigator.clipboard.writeText(t);if(p&&p.catch)p.catch(()=>{});return;}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}catch(e){}
 }
 function copyClause(id){const t=document.getElementById('clause_'+id).textContent;copyText(t);const d=deals.find(x=>x.id===id);logIt(d,'계약 조항 문구 복사');save();toast('계약 조항이 복사되었습니다');}
@@ -2151,18 +2301,20 @@ function importCSV(inp){
   r.onload=()=>{
     const lines=String(r.result).replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
     let ok=0,skip=0;
+    let gradeForced=0;
     lines.slice(1).forEach(l=>{
       const c=l.split(',').map(x=>x.trim());
       if(c.length<7){skip++;return;}
       const pay=PAY[c[6]]?c[6]:'OA';
-      const nd={id:seq++,item:c[0]||'(품목)',cat:CATS.includes(c[1])?c[1]:'일반',buyer:c[2]||'(바이어)',country:c[3]||'-',amt:Number(c[4])||0,credit:['A','B','C','D','NA'].includes(c[5])?c[5]:'NA',pay,inco:c[7]||'',due:/^\d{4}-\d{2}-\d{2}$/.test(c[8])?c[8]:'',insp:(c[9]||'').toUpperCase()==='Y',newmkt:(c[10]||'').toUpperCase()==='Y'};
+      if(['A','B','C','D'].includes(c[5]))gradeForced++; /* §2-5-4: 조사 결과 미기록 상태이므로 등급 강제 NA */
+      const nd={id:seq++,item:c[0]||'(품목)',cat:CATS.includes(c[1])?c[1]:'일반',buyer:c[2]||'(바이어)',country:c[3]||'-',amt:Number(c[4])||0,credit:'NA',pay,inco:c[7]||'',due:/^\d{4}-\d{2}-\d{2}$/.test(c[8])?c[8]:'',insp:(c[9]||'').toUpperCase()==='Y',newmkt:(c[10]||'').toUpperCase()==='Y'};
       const st=Math.min(5,Math.max(0,(Number(c[11])||1)-1));
       const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
       nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
       for(let i=0;i<=st;i++)genStageTasks(nd,i);nd.stage=st;
       syncRiskTasks(nd);logIt(nd,'CSV 일괄 등록');deals.unshift(nd);ok++;
     });
-    inp.value='';render();toast(`가져오기 완료 — ${ok}건 등록${skip?`, ${skip}건 건너뜀`:''}`);
+    inp.value='';render();toast(`가져오기 완료 — ${ok}건 등록${skip?`, ${skip}건 건너뜀`:''}${gradeForced?` · 신용등급 ${gradeForced}건은 조사 결과 미기록 상태이므로 미확인으로 처리했습니다`:''}`);
   };
   r.readAsText(f,'utf-8');
 }
@@ -2188,10 +2340,11 @@ function exportJSON(){const b=new Blob([JSON.stringify({deals,seq,feedback:FEEDB
 /* ---------- 시드 ---------- */
 function seedData(){
   const t=new Date(),fmt=o=>{const x=new Date(t);x.setDate(x.getDate()+o);return x.toISOString().slice(0,10);};
+  /* §2-5-6 시드 정합성: credit은 전부 'NA'. 단 Osaka Foods 1건은 아래에서 '결과 수신 + 등급 기록' 상태로 세팅 */
   [['마른김 (1212.21)','수산식품','Pacific Nori LLC','미국',80000,'NA','OA','',false,true,4,fmt(-3),0.9],
-   ['기초 화장품 세트 (3304.99)','화장품','LA Beauty Dist.','미국',48000,'C','TT_A','',false,true,2,fmt(12),0.3],
-   ['자동차 부품 (8708.99)','기계·부품','Hanoi Auto Parts','베트남',120000,'B','DA','FOB',false,false,3,fmt(18),0.7],
-   ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'A','LC','CFR',true,false,1,fmt(30),0.85]]
+   ['기초 화장품 세트 (3304.99)','화장품','LA Beauty Dist.','미국',48000,'NA','TT_A','',false,true,2,fmt(12),0.3],
+   ['자동차 부품 (8708.99)','기계·부품','Hanoi Auto Parts','베트남',120000,'NA','DA','FOB',false,false,3,fmt(18),0.7],
+   ['건조 표고버섯 (0712.39)','농식품','Osaka Foods','일본',26000,'NA','LC','CFR',true,false,1,fmt(30),0.85]]
   .forEach(a=>{
     const d={id:seq++,item:a[0],cat:a[1],buyer:a[2],country:a[3],amt:a[4],credit:a[5],pay:a[6],inco:a[7],insp:a[8],newmkt:a[9],due:a[11],sample:true};
     const r=assess(d);d.score=r.score;d.level=r.level;d.recs=r.recs;
@@ -2201,6 +2354,11 @@ function seedData(){
     let k=0;d.tasks.forEach(tk=>{k++;if(tk.stage<d.stage)tk.done=(k%10)/10<0.95;else tk.done=(k%10)/10<a[12]-0.3;});
     syncRiskTasks(d);deals.push(d);
   });
+  /* 정합성을 갖춘 예시 1건: 신청 → 결과 수신 → 등급 기록 (등급만 있고 신청 없는 조합을 만들지 않음) */
+  const ex='Osaka Foods';
+  BUYER_META[ex]=Object.assign({},BUYER_META[ex],{req:'received',appliedAt:iso(new Date(Date.now()-14*86400000)),receivedAt:iso(new Date(Date.now()-3*86400000))});
+  bmHist(ex,'K-SURE 신용조사 상태 변경: 결과 수신(샘플)');
+  uiSave();applyBuyerGrade(ex,'B',true);
 }
 function resetAll(){
   if(!confirm('모든 데이터를 초기화하고 신규 방문 상태로 되돌릴까요?\n(거래·프로필·설정·수요 집계까지 전부 삭제됩니다 — 필요하면 먼저 💾 백업하세요)'))return;
@@ -2213,6 +2371,10 @@ function removeSamples(){const n=deals.filter(d=>d.sample).length;if(!n){toast('
 uiLoad();adminLoad();ksureLoad();oecdLoad();
 load(); /* 클린 스타트: 예시 데이터는 자동 생성하지 않음 — [예시 데이터 넣어보기]로만 (opt-in) */
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
+/* §2-3·§2-5-5 신청 상태 이관 + 신용확인 정합성 조정 (둘 다 멱등) */
+migrateCreditReq();
+const _fixed=enforceCreditIntegrity();
+if(_fixed){save();setTimeout(()=>toast(`신용조사 결과가 기록되지 않은 거래 ${_fixed}건의 신용확인 상태를 '미확인'으로 조정했습니다`),1400);}
 /* 구버전 서류함(숫자 키) → 이름 키 마이그레이션 */
 deals.forEach(d=>{if(d.docs&&d.docs[0]!==undefined){const old=['P/I','계약서','B/L·AWB','C/O','보험증권'];const nd={};Object.keys(d.docs).forEach(k=>{if(/^\d+$/.test(k)&&old[k])nd[old[k]]=d.docs[k];else if(!/^\d+$/.test(k))nd[k]=d.docs[k];});d.docs=nd;}});
 selfTest(); /* 회귀 테스트 — 결과는 [데이터 관리] 뷰와 콘솔에 표시 */
