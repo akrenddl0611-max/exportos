@@ -1586,7 +1586,9 @@ function renderWizard(){
   const badge=ok=>ok?'<span class="badge LOW">양호</span>':'<span class="badge MED">조치 필요</span>';
   const pol=policyViolations(d);
   el.innerHTML=`${qcForm()}
-   <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px"><label style="margin:0">진단할 거래</label>
+   <div style="border-top:1px solid var(--line);margin:18px 0 12px;padding-top:14px"><b style="font-size:14.5px">📁 이미 저장된 거래 점검</b>
+    <div class="mut" style="font-size:12px;margin-top:3px">위 간편 점검과는 별개입니다 — 아래에서 선택한 거래의 저장된 정보로 점검합니다.</div></div>
+   <div style="display:flex;gap:10px;align-items:center;margin-bottom:4px"><label style="margin:0">점검할 거래 선택</label>
    <select style="width:auto" onchange="wizSel=Number(this.value);renderWizard()">${actives.map(x=>`<option value="${x.id}" ${x.id===wizSel?'selected':''}>${esc(x.buyer)} — ${esc(x.item)}</option>`).join('')}</select>
    <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span></div>
    ${pol.map(v=>`<div class="warnbar">⚠ 거래 정책 위반: ${v}</div>`).join('')}
@@ -1601,7 +1603,7 @@ function renderWizard(){
      <span class="wd">검사·클레임 기한: ${d.insp?'명시':'<b>미설정</b>'}<br>인코텀즈: ${d.inco||'<b>미선택</b>'}</span>
      <button class="btn ghost sm" onclick="openDetail(${d.id});curTab='계약';renderDetail(${d.id})">점검하기</button></div>
    </div>
-   <button class="cta" onclick="runWizard(${d.id})">🛡 입력된 정보로 거래 안전 점검하기</button>
+   <button class="cta" onclick="runWizard(${d.id})">🛡 ${esc(d.buyer)} — 저장된 정보로 점검 결과 열기 ($${(d.amt||0).toLocaleString()}${(d.sim&&d.sim.adv)?' · 선수금 '+d.sim.adv+'%':''})</button>
    <div class="mut" style="font-size:12px;margin-top:12px">${DISCLAIMER}</div>`;
 }
 function runWizard(id){GUIDE.diag=true;uiSave();openDetail(id);curTab='위험 지표';renderDetail(id);render();}
