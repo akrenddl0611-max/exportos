@@ -1542,7 +1542,7 @@ function renderCredit(){
 /* 간편 점검 (5필드 — 바이어·국가·금액·결제방식·선수금) */
 let _qc=null;
 function qcRun(){
-  const t={buyer:v('qc_buyer')||'(바이어)',country:v('qc_country'),amt:Number(v('qc_amt'))||0,pay:v('qc_pay'),credit:'NA',inco:'',insp:false,cat:PROFILE.cat||'일반',item:PROFILE.item||'(품목)',sim:{adv:Number(v('qc_adv'))||0}};
+  const t={buyer:v('qc_buyer')||'(바이어)',country:v('qc_country'),amt:numOf(v('qc_amt')),pay:v('qc_pay'),credit:'NA',inco:'',insp:false,cat:PROFILE.cat||'일반',item:PROFILE.item||'(품목)',sim:{adv:numOf(v('qc_adv'))}};
   const a=assess(t);_qc={t,a};GUIDE.diag=true;uiSave();renderWizard();
 }
 function qcSave(){
@@ -1874,7 +1874,7 @@ function formSheet(d){
   openSheet();
 }
 function saveDeal(){
-  const nd={id:editId||seq++,item:v('m_item')||'(품목)',cat:v('m_cat'),buyer:v('m_buyer')||'(바이어)',country:v('m_country')||'-',amt:Number(v('m_amt'))||0,credit:v('m_credit'),pay:v('m_pay'),inco:v('m_inco'),due:v('m_due'),insp:document.getElementById('m_insp').checked,newmkt:document.getElementById('m_newmkt').checked};
+  const nd={id:editId||seq++,item:v('m_item')||'(품목)',cat:v('m_cat'),buyer:v('m_buyer')||'(바이어)',country:v('m_country')||'-',amt:numOf(v('m_amt')),credit:v('m_credit'),pay:v('m_pay'),inco:v('m_inco'),due:v('m_due'),insp:document.getElementById('m_insp').checked,newmkt:document.getElementById('m_newmkt').checked};
   const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
   if(editId){
     const i=deals.findIndex(x=>x.id===editId);const old=deals[i];
@@ -2307,7 +2307,7 @@ function importCSV(inp){
       if(c.length<7){skip++;return;}
       const pay=PAY[c[6]]?c[6]:'OA';
       if(['A','B','C','D'].includes(c[5]))gradeForced++; /* §2-5-4: 조사 결과 미기록 상태이므로 등급 강제 NA */
-      const nd={id:seq++,item:c[0]||'(품목)',cat:CATS.includes(c[1])?c[1]:'일반',buyer:c[2]||'(바이어)',country:c[3]||'-',amt:Number(c[4])||0,credit:'NA',pay,inco:c[7]||'',due:/^\d{4}-\d{2}-\d{2}$/.test(c[8])?c[8]:'',insp:(c[9]||'').toUpperCase()==='Y',newmkt:(c[10]||'').toUpperCase()==='Y'};
+      const nd={id:seq++,item:c[0]||'(품목)',cat:CATS.includes(c[1])?c[1]:'일반',buyer:c[2]||'(바이어)',country:c[3]||'-',amt:numOf(c[4]),credit:'NA',pay,inco:c[7]||'',due:/^\d{4}-\d{2}-\d{2}$/.test(c[8])?c[8]:'',insp:(c[9]||'').toUpperCase()==='Y',newmkt:(c[10]||'').toUpperCase()==='Y'};
       const st=Math.min(5,Math.max(0,(Number(c[11])||1)-1));
       const a=assess(nd);nd.score=a.score;nd.level=a.level;nd.recs=a.recs;
       nd.stage=0;nd.tasks=[];nd.tseq=0;nd.genStages=[];nd.notes='';nd.log=[];
@@ -2333,6 +2333,8 @@ document.querySelector('.side').addEventListener('click',e=>{const a=e.target.cl
  document.querySelector('.side').classList.remove('open');});
 function globalSearch(){const q=document.getElementById('gsearch').value;go('ledger');const l=document.getElementById('q');if(l){l.value=q;renderLedger();}}
 const v=id=>document.getElementById(id).value.trim();
+/* 금액·비율 입력 정규화 — 콤마·통화기호·공백이 섞여도 숫자만 취함 (예: "$30,000" → 30000). 음수·비수치는 0 */
+function numOf(s){const n=Number(String(s==null?'':s).replace(/[^0-9.]/g,''));return isFinite(n)&&n>0?n:0;}
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function opt(vals,labels,sel){return vals.map((x,i)=>`<option value="${x}" ${x===sel?'selected':''}>${labels[i]}</option>`).join('');}
 function exportJSON(){const b=new Blob([JSON.stringify({deals,seq,feedback:FEEDBACK,teaser:TEASER,adminOverlay:OVERLAY},null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='exportos_deals.json';a.click();toast('내보내기 완료 — 안전한 곳에 보관하세요');}
