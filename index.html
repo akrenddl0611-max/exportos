@@ -1107,7 +1107,7 @@ function scanContract(text,deal){
   const combos=SCAN_COMBO.filter(c=>{
     const nOk=c.needAny?c.need.some(x=>hitIds.includes(x)):c.need.every(x=>hitIds.includes(x));
     return nOk&&c.miss.every(x=>missIds.includes(x));
-  }).map(c=>({id:c.id,msg:c.msg,need:c.need,miss:c.miss}));
+  }).map(c=>({id:c.id,msg:c.msg,need:c.need.filter(x=>hitIds.includes(x)),miss:c.miss})); /* 관련 표시는 실제 검출된 규칙만 */
   const counts={r:allHits.filter(h=>h.grade==='r').length,
     o:allHits.filter(h=>h.grade==='o').length+(gauge?1:0),
     miss:missing.length,
