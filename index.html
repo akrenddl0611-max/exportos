@@ -1546,11 +1546,16 @@ function qcStale(){
   const box=document.getElementById('qcres');if(!box||!_qc)return;
   box.style.opacity='.45';const w=document.getElementById('qcstale');if(w)w.classList.remove('hide');
 }
+const QC_DEMO_AMT=30000; /* 금액 미입력 시 둘러보기용 예시 금액 — 화면에 예시임을 명시 */
 function qcRun(){
-  const amt=numOf(v('qc_amt'));
-  if(amt<=0){toast('거래금액(USD)을 입력하세요 — 노출액 계산에 필요합니다');const el=document.getElementById('qc_amt');if(el)el.focus();return;}
+  let amt=numOf(v('qc_amt')),demo=false;
+  if(amt<=0){ /* 차단하지 않고 예시 금액으로 점검 — 단, 예시임을 결과에 표기 */
+    amt=QC_DEMO_AMT;demo=true;
+    const el=document.getElementById('qc_amt');if(el)el.value=String(QC_DEMO_AMT);
+    toast(`거래금액이 없어 예시 금액 $${QC_DEMO_AMT.toLocaleString()}로 점검했습니다 — 실제 금액을 넣으면 다시 계산됩니다`);
+  }
   const t={buyer:v('qc_buyer')||'(바이어)',country:v('qc_country'),amt,pay:v('qc_pay'),credit:'NA',inco:'',insp:false,cat:PROFILE.cat||'일반',item:PROFILE.item||'(품목)',sim:{adv:numOf(v('qc_adv'))}};
-  const a=assess(t);_qc={t,a};GUIDE.diag=true;uiSave();renderWizard();
+  const a=assess(t);_qc={t,a,demo};GUIDE.diag=true;uiSave();renderWizard();
 }
 function qcSave(){
   if(!_qc)return;
@@ -1564,17 +1569,17 @@ function qcForm(){
   const fmt=x=>'$'+Number(x).toLocaleString();
   return `<div class="panel" style="background:linear-gradient(180deg,#eef3fd,#fff)">
    <h2>⚡ 간편 점검 — 3분이면 됩니다 <span class="pill">필수 5개만</span></h2>
-   <div class="row"><div><label>바이어명</label><input id="qc_buyer" placeholder="예: ABC Trading" oninput="qcStale()"></div>
-   <div><label>수입국</label><input id="qc_country" list="qc_countries" placeholder="예: 미국, 베트남" oninput="qcStale()"><datalist id="qc_countries">${Object.keys(KO2EN).map(k=>`<option value="${k}">`).join('')}</datalist></div></div>
-   <div class="row"><div><label>거래금액 (USD)</label><input id="qc_amt" type="number" placeholder="30000" oninput="qcStale()"></div>
-   <div><label>결제방식</label><select id="qc_pay" onchange="qcStale()">${opt(Object.keys(PAY),Object.values(PAY),'OA')}</select></div></div>
-   <div class="row"><div><label>선수금 비율 (%)</label><input id="qc_adv" type="number" value="0" min="0" max="100" oninput="qcStale()"></div>
+   <div class="row"><div><label>바이어명</label><input id="qc_buyer" placeholder="예: ABC Trading" value="${_qc&&_qc.t.buyer!=='(바이어)'?esc(_qc.t.buyer):''}" oninput="qcStale()"></div>
+   <div><label>수입국</label><input id="qc_country" list="qc_countries" placeholder="예: 미국, 베트남" value="${_qc?esc(_qc.t.country||''):''}" oninput="qcStale()"><datalist id="qc_countries">${Object.keys(KO2EN).map(k=>`<option value="${k}">`).join('')}</datalist></div></div>
+   <div class="row"><div><label>거래금액 (USD)</label><input id="qc_amt" type="number" placeholder="30000" value="${_qc?_qc.t.amt:''}" oninput="qcStale()"></div>
+   <div><label>결제방식</label><select id="qc_pay" onchange="qcStale()">${opt(Object.keys(PAY),Object.values(PAY),_qc?_qc.t.pay:'OA')}</select></div></div>
+   <div class="row"><div><label>선수금 비율 (%)</label><input id="qc_adv" type="number" value="${_qc?_qc.t.sim.adv:0}" min="0" max="100" oninput="qcStale()"></div>
    <div style="display:flex;align-items:flex-end"><button class="cta" style="padding:12px" onclick="qcRun()">🛡 이 거래 점검하기</button></div></div>
    <div class="mut" style="font-size:11.5px">인코텀즈·검사조항 등은 건너뛰어도 됩니다 — 미입력 항목은 '미확인'으로 처리됩니다.</div>
    ${_qc?`<div class="riskbox ${_qc.a.level}" style="margin-top:12px" id="qcres">
      <div id="qcstale" class="hide warnbar" style="margin-bottom:8px">입력이 변경되었습니다 — 아래 결과는 이전 입력 기준입니다. [🛡 이 거래 점검하기]를 다시 눌러주세요.</div>
      <div style="font-size:17px;font-weight:800">이 거래에서 최대 <span style="color:var(--red)">${fmt(exposure(_qc.t.amt,_qc.t.sim.adv,''))}</span> 잃을 수 있습니다</div>
-     <div class="mut" style="font-size:11.5px;margin-top:2px">점검 기준: 거래금액 ${fmt(_qc.t.amt)} · 선수금 ${_qc.t.sim.adv}%${_qc.t.country?' · '+esc(_qc.t.country):''}</div>
+     <div class="mut" style="font-size:11.5px;margin-top:2px">점검 기준: 거래금액 ${fmt(_qc.t.amt)}${_qc.demo?' <b style="color:var(--amber)">(예시 금액 — 실제 금액을 입력하면 다시 계산됩니다)</b>':''} · 선수금 ${_qc.t.sim.adv}%${_qc.t.country?' · '+esc(_qc.t.country):''}</div>
      <div style="margin-top:4px"><span class="badge ${_qc.a.level}">${relabel(_qc.a.level)}</span> ${_qc.a.score}점 (만점 126) · 노출액 = 금액 − 선수금 ${_qc.t.sim.adv}%</div>
      <div style="margin-top:6px;font-size:12px">${_qc.a.parts.filter(p=>p.v>0).map(p=>`+${p.v} ${esc(p.k.split(' — ')[0])}`).join(' · ')||'가점 없음'}</div>
      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="qcSave()">이 거래를 진행 보드에 저장</button><button class="btn line sm" onclick="_qc=null;renderWizard()">지우기</button></div>
