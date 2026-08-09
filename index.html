@@ -798,6 +798,31 @@ function selfTest(){
   ok('B5 신규 바이어 → 행3 미결·이력 없음',bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:0,late:0,deals:[dealG]}).v3==='p','v3='+bfix({req:'received',grade:'A',fraudN:0,oecd:{g:2,st:'ok'},histN:0,late:0,deals:[dealG]}).v3);
   const b6=bfix({req:'received',grade:'A',fraudN:0,oecd:null,histN:2,late:0,deals:[dealG]});
   ok('B6 OECD 미탑재 → 행2 미결(양호 미표기)',b6.v2==='p','v2='+b6.v2);
+  /* S1~S8 — 독소조항 스캐너 (결정론 엔진, 픽스처) */
+  const S={
+   s1:'1. Buyer may inspect the goods at any time without limitation and reject at its sole discretion.',
+   s2:'1. Seller shall pay a penalty of 20% of the total contract price for each week of delayed delivery.',
+   s3:'1. Payment shall be made by O/A 90 days after B/L date.',
+   s4:'1. Payment shall be made by irrevocable Letter of Credit at sight.',
+   s5:'1. Governed by CISG. Arbitration at KCAB in Seoul.\n2. Delivery on FOB Busan (Incoterms 2020).',
+   s7:'Buyer may inspect the goods at any time without limitation and reject at its sole discretion. Payment by O/A 90 days after B/L date.',
+   s8:'1. 매수인은 물품 도착일로부터 14일 이내에 검사를 완료한다.\n2. 대금은 선적 후 90일 이내에 지급한다.'};
+  const r1=scanContract(S.s1);
+  ok('S1 검사 무제한+임의 거절 → INS-R1·INS-R2 검출(🔴)',r1.allHits.some(h=>h.id==='INS-R1')&&r1.allHits.some(h=>h.id==='INS-R2')&&r1.counts.r>=2,r1.allHits.map(h=>h.id).join(','));
+  const r2=scanContract(S.s2,{amt:100000});
+  ok('S2 지체상금 20%/주 파싱 → 주당 $20,000·5주 100%',r2.gauge&&r2.gauge.rate===20&&r2.gauge.perUnit===20000&&r2.gauge.unitsTo100===5,r2.gauge?`${r2.gauge.rate}% ${r2.gauge.perUnit} ${r2.gauge.unitsTo100}`:'gauge 없음');
+  const r3=scanContract(S.s3);
+  ok('S3 O/A → PAY-R1 검출(🟠)',r3.allHits.some(h=>h.id==='PAY-R1'&&h.grade==='o'),r3.allHits.map(h=>h.id).join(','));
+  const r4=scanContract(S.s4);
+  ok('S4 L/C 일람불 → 위험 패턴 0건',r4.allHits.length===0,'hits='+r4.allHits.length);
+  const r5=scanContract(S.s5);
+  ok('S5 준거법·중재·인코텀즈 존재 → 3종 누락 아님',!r5.missing.some(m=>['MISS-LAW','MISS-ARB','MISS-INC'].includes(m.id)),r5.missing.map(m=>m.id).join(','));
+  const r6=scanContract(S.s1+'\n'+S.s2.replace('1.','2.')+'\n'+S.s3.replace('1.','3.'));
+  ok('S6 누락 검출 + 조합 경고 3건 전부 발화',['MISS-FM','MISS-ROT','MISS-CLM'].every(x=>r6.missing.some(m=>m.id===x))&&r6.combos.length===3,'combos='+r6.combos.map(c=>c.id).join(','));
+  const r7=scanContract(S.s7);
+  ok('S7 번호 없는 통짜 → 분리 실패 고지 + 정상 검사',r7.splitFailed===true&&r7.allHits.length>=2,'splitFailed='+r7.splitFailed+' hits='+r7.allHits.length);
+  const r8=scanContract(S.s8);
+  ok('S8 한글 계약 → 오탐 0건 + 영문 전용 고지',r8.koreanOnly===true&&r8.allHits.length===0&&r8.missing.length===0,'koreanOnly='+r8.koreanOnly+' hits='+r8.allHits.length);
   RULES_OFF=savedOff;
   window._qa=T;
   const fail=T.filter(x=>!x.pass);
@@ -970,6 +995,126 @@ function buyerReport(b,opts){
   return{rows,gn,pn,rn,v1,v2,v3,req,grade,fraudN,oecd,late,histN,rep,repLabel,actv,
     opinion:[s1,s2,s3].filter(Boolean),recs:recs.slice(0,3)};
 }
+
+/* =====================================================================
+   독소조항 스캐너 — 결정론 판정 엔진 (INSTRUCTION_확장_독소조항스캐너.md §4)
+   LLM·외부 API 호출 없음. 같은 텍스트 = 같은 판정. 근거 사례·확신도 표기 없음.
+===================================================================== */
+const SCAN_KEY='exportos_scanner_v1';
+let CLAUSE_LIB={items:{},tail:'법적 확정은 변호사 확인 필요'},CLAUSE_NORMS={items:[]},CLAUSE_CASES={items:[]};
+let SCAN_USE={runs:0,adminRuns:0,hitl:0,adminHitl:0};
+try{SCAN_USE=Object.assign(SCAN_USE,JSON.parse(sGet(SCAN_KEY))||{});}catch(e){}
+const scanUseSave=()=>sSet(SCAN_KEY,JSON.stringify(SCAN_USE));
+function scanLoad(){
+  fetch('data/clause_library.json').then(r=>r.ok?r.json():null).then(j=>{if(j)CLAUSE_LIB=j;}).catch(()=>{});
+  fetch('data/clause_norms.json').then(r=>r.ok?r.json():null).then(j=>{if(j)CLAUSE_NORMS=j;}).catch(()=>{});
+  fetch('data/clause_cases.json').then(r=>r.ok?r.json():null).then(j=>{if(j)CLAUSE_CASES=j;}).catch(()=>{});
+}
+/* §4-1 위험 패턴 12종 — 표의 의도를 벗어난 확대 매칭 금지 */
+const HAS_PERIOD=/within\s+\d+\s*(business\s+)?(day|days|week|weeks|month|months)/i;
+const HAS_CAP=/(limited to|shall not exceed|not exceed|cap(ped)? at|maximum (aggregate )?liability)/i;
+const SCAN_RULES=[
+ {id:'INS-R1',type:'검사',grade:'r',why:'검사 기간 무제한 — 대금 지연·거절 통로',alt:'#INS-03',
+  test:t=>/inspect/i.test(t)&&(/at any time/i.test(t)||/without limitation/i.test(t)||!HAS_PERIOD.test(t)),
+  mark:/inspect[^.]*/i},
+ {id:'INS-R2',type:'검사',grade:'r',why:'거절 사유에 객관 기준 없음',alt:'#INS-03',
+  test:t=>/reject/i.test(t)&&/sole discretion/i.test(t),mark:/reject[^.]*sole discretion/i},
+ {id:'LD-R1',type:'지체상금',grade:'gauge',why:'지체상금 수치 검출 — 통상범위와 비교',alt:'#LD-02',
+  test:t=>(/penalty/i.test(t)||/liquidated damages/i.test(t))&&SCAN_LD_RE.test(t),mark:/(penalty|liquidated damages)[^.]*/i},
+ {id:'LIA-R1',type:'책임',grade:'r',why:'간접 손해 무제한 배상',alt:'#LIA-01',
+  test:t=>(/indirect/i.test(t)||/consequential/i.test(t))&&/damages/i.test(t)&&(/without limitation/i.test(t)||!HAS_CAP.test(t)),
+  mark:/(indirect|consequential)[^.]*/i},
+ {id:'PAY-R1',type:'결제',grade:'o',why:'담보 없는 외상 — 미회수 위험(점수표 O/A 40 연동)',alt:'#PAY-01',
+  test:t=>/\bO\s*\/\s*A\b/i.test(t)||/open account/i.test(t),mark:/(\bO\s*\/\s*A\b|open account)[^.]*/i},
+ {id:'PAY-R2',type:'결제',grade:'o',why:'후불 송금 — 회수 위험(점수표 사후 T/T 35 연동)',alt:'#PAY-01',
+  test:t=>/\bT\s*\/\s*T\b/i.test(t)&&/\bafter\b/i.test(t),mark:/\bT\s*\/\s*T\b[^.]*/i},
+ {id:'WAR-R1',type:'보증',grade:'o',why:'통상 대비 장기 보증',alt:'#WAR-01',
+  test:t=>{if(!/warrant/i.test(t))return false;const m=t.match(/(\d+)\s*(month|months)/i);if(m&&Number(m[1])>24)return true;const y=t.match(/(\d+)\s*(year|years)/i);return !!(y&&Number(y[1])>2);},mark:/warrant[^.]*/i},
+ {id:'JUR-R1',type:'분쟁',grade:'o',why:'상대국 법원 전속 관할',alt:'#JUR-01',
+  test:t=>/exclusive jurisdiction/i.test(t)&&!/(korea|seoul|대한민국|서울)/i.test(t),mark:/exclusive jurisdiction[^.]*/i},
+ {id:'TER-R1',type:'해지',grade:'r',why:'일방 임의 해지권',alt:'#TER-01',
+  test:t=>/terminat/i.test(t)&&(/at any time/i.test(t)||/for convenience/i.test(t))&&/(buyer|purchaser)\s+may\s+terminat/i.test(t),
+  mark:/(buyer|purchaser)\s+may\s+terminat[^.]*/i},
+ {id:'ASN-R1',type:'양도',grade:'o',why:'일방 계약 양도권',alt:'#ASN-01',
+  test:t=>/(buyer|purchaser)\s+may\s+(freely\s+)?assign/i.test(t),mark:/(buyer|purchaser)\s+may\s+(freely\s+)?assign[^.]*/i},
+ {id:'IPR-R1',type:'지재권',grade:'o',why:'지재권 분쟁 책임 전가',alt:'#IPR-01',
+  test:t=>/indemnif/i.test(t)&&/intellectual property/i.test(t)&&/(seller|supplier)\s+shall\s+indemnif/i.test(t),
+  mark:/(seller|supplier)\s+shall\s+indemnif[^.]*/i},
+ {id:'SET-R1',type:'상계',grade:'r',why:'바이어 임의 대금 공제권',alt:'#SET-01',
+  test:t=>/set[\s-]?off/i.test(t)||/setoff/i.test(t)||/deduct\s+from\s+(the\s+)?payment/i.test(t),
+  mark:/(set[\s-]?off|setoff|deduct\s+from\s+(the\s+)?payment)[^.]*/i},
+];
+const SCAN_LD_RE=/(\d+(?:\.\d+)?)\s*%[^%]{0,40}?(?:per|each|for each)\s+(week|day|month)/i;
+/* §4-2 누락 조항 6종 */
+const SCAN_MISS=[
+ {id:'MISS-FM',name:'불가항력',risk:'천재지변 지연도 전부 수출자 책임이 될 수 있습니다',alt:'#FM-01',has:t=>/force majeure/i.test(t)},
+ {id:'MISS-ROT',name:'소유권 유보',risk:'대금을 받지 못해도 소유권이 이전됩니다',alt:'#ROT-01',has:t=>/retention of title/i.test(t)||/title[^.]{0,60}until[^.]{0,30}payment/i.test(t)},
+ {id:'MISS-CLM',name:'클레임 기한',risk:'무기한 클레임에 노출됩니다',alt:'#CLM-01',has:t=>/claim/i.test(t)&&/within\s+\d+\s*(business\s+)?(day|days)/i.test(t)},
+ {id:'MISS-LAW',name:'준거법',risk:'분쟁 시 기준 법이 불명확합니다',alt:'#LAW-01',has:t=>/governed by/i.test(t)||/governing law/i.test(t)},
+ {id:'MISS-ARB',name:'분쟁해결',risk:'분쟁 해결 절차가 불명확합니다',alt:'#ARB-01',has:t=>/arbitration/i.test(t)||/jurisdiction/i.test(t)},
+ {id:'MISS-INC',name:'인도조건',risk:'위험·비용 이전 시점이 불명확합니다',alt:'#INC-01',has:t=>/\b(FOB|CIF|CFR|EXW|DAP|DDP|FCA|FAS|CPT|CIP|DPU)\b/i.test(t)&&/incoterms/i.test(t)},
+];
+/* §4-4 조합 경고 3종 */
+const SCAN_COMBO=[
+ {id:'CMB-1',need:['LD-R1'],miss:['MISS-FM'],msg:'불가항력 면책 없이 지체상금 — 불가항력 지연에도 벌금이 적용될 수 있습니다'},
+ {id:'CMB-2',need:['PAY-R1'],miss:['MISS-ROT'],msg:'외상 조건에서 소유권 유보 없음 — 미회수 시 물권도 상실합니다'},
+ {id:'CMB-3',need:['INS-R1','INS-R2'],needAny:true,miss:['MISS-CLM'],msg:'검사 무제한 + 클레임 기한 없음 — 장기간 트집이 가능합니다'},
+];
+/* 조항 분리 — 번호 패턴이 없으면 단일 블록(고지 표시) */
+const CLAUSE_NO_RE=/^\s*(?:\d+\s*[.)]|Article\s+\d+|Clause\s+\d+|제\s*\d+\s*조)/i;
+function splitClauses(text){
+  const lines=String(text||'').split(/\r?\n/);
+  const hasNo=lines.some(l=>CLAUSE_NO_RE.test(l));
+  if(!hasNo){const t=String(text||'').trim();return{list:t?[{no:1,text:t}]:[],splitFailed:true};}
+  const out=[];let cur=null;
+  lines.forEach(l=>{
+    if(CLAUSE_NO_RE.test(l)){if(cur)out.push(cur);cur={no:out.length+1,text:l.trim()};}
+    else if(cur&&l.trim())cur.text+=' '+l.trim();
+    else if(!cur&&l.trim())cur={no:1,text:l.trim()};
+  });
+  if(cur)out.push(cur);
+  return{list:out,splitFailed:false};
+}
+const isKoreanOnly=t=>/[가-힣]/.test(t)&&((String(t).match(/[A-Za-z]{2,}/g)||[]).length<3);
+/* 메인 판정 — 순수 함수(입력 텍스트 + 선택적 거래) → 판정 JSON */
+function scanContract(text,deal){
+  const sp=splitClauses(text);
+  const whole=String(text||'');
+  const koreanOnly=isKoreanOnly(whole);
+  const clauses=sp.list.map(c=>{
+    const hits=koreanOnly?[]:SCAN_RULES.filter(r=>{try{return r.test(c.text);}catch(e){return false;}}).map(r=>{
+      const m=c.text.match(r.mark);
+      return{id:r.id,type:r.type,grade:r.grade,why:r.why,alt:r.alt,excerpt:m?m[0].slice(0,180):''};
+    });
+    return{...c,hits};
+  });
+  const allHits=clauses.flatMap(c=>c.hits.map(h=>({...h,no:c.no})));
+  const missing=koreanOnly?[]:SCAN_MISS.filter(m=>!m.has(whole)).map(m=>({id:m.id,name:m.name,risk:m.risk,alt:m.alt}));
+  /* 게이지: LD 수치 파싱 (순수 산수 파생, 통상범위는 출처 있는 경우만) */
+  let gauge=null;
+  const ld=allHits.find(h=>h.id==='LD-R1');
+  if(ld){
+    const m=whole.match(SCAN_LD_RE);
+    if(m){
+      const rate=Number(m[1]),unit={week:'주',day:'일',month:'월'}[String(m[2]).toLowerCase()]||m[2];
+      const norm=(CLAUSE_NORMS.items||[]).find(x=>x.항목==='지체상금율'||x.item==='지체상금율');
+      gauge={rate,unit,norm:norm||null,
+        perUnit:deal&&deal.amt?Math.round(deal.amt*rate/100):null,
+        unitsTo100:rate>0?Math.round(100/rate*10)/10:null};
+    }
+  }
+  const hitIds=allHits.map(h=>h.id),missIds=missing.map(m=>m.id);
+  const combos=SCAN_COMBO.filter(c=>{
+    const nOk=c.needAny?c.need.some(x=>hitIds.includes(x)):c.need.every(x=>hitIds.includes(x));
+    return nOk&&c.miss.every(x=>missIds.includes(x));
+  }).map(c=>({id:c.id,msg:c.msg,need:c.need,miss:c.miss}));
+  const counts={r:allHits.filter(h=>h.grade==='r').length,
+    o:allHits.filter(h=>h.grade==='o').length+(gauge?1:0),
+    miss:missing.length,
+    g:clauses.filter(c=>!c.hits.length).length};
+  return{clauses,allHits,missing,gauge,combos,counts,splitFailed:sp.splitFailed,koreanOnly,scannedAt:now()};
+}
+const scanAltOf=id=>(CLAUSE_LIB.items||{})[id]||null;
 
 /* 공개 기업등록부 — 실존 확인된 공식 레지스트리만 수록 (임의 URL 생성 금지) */
 const REGISTRIES=[
@@ -1220,7 +1365,7 @@ function cardHTML(d){
   return `<div class="card ${d.level}" draggable="true" ondragstart="dStart(${d.id})" onclick="openDetail(${d.id})">
   <div class="b">${esc(d.buyer)} ${d.sample?'<span class="pill" style="font-size:9.5px">예시</span>':''}</div>
   <div class="m">$${(d.amt||0).toLocaleString()} · ${esc(d.country)}</div>
-  <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span>${ddBadge(d)}
+  <span class="badge ${d.level}">${relabel(d.level)} ${d.score}</span>${ddBadge(d)}${d.scanLast?`<span class="dd ${d.scanLast.r?'over':'ok'}" title="계약 검사 결과 — 안전 점검 점수와는 별개 축">📄 🔴${d.scanLast.r}·✚${d.scanLast.miss}</span>`:''}
   <div style="display:flex;gap:3px;margin-top:9px">${tl}</div>
   <div class="progl"><span style="color:var(--pri-d);font-weight:700">${STAGES[d.stage]}</span><span>${p.total?'절차 '+p.done+'/'+p.total:''}</span></div>
   ${d.stage<5?`<div class="next">▶ ${esc(nextAction(d))}</div>`:''}</div>`;}
@@ -2058,7 +2203,11 @@ function detailTab(d){
   if(curTab==='계약'){
     return `<label>계약 방어 상태</label><div style="margin-bottom:12px"><span class="pill">${d.insp?'✔ 검사·클레임 기한 명시':'✕ 검사·클레임 기한 미설정'}</span><span class="pill">${d.inco?'✔ 인코텀즈 '+d.inco:'✕ 인코텀즈 미선택'}</span></div>
       <label>리스크관리 계약 조항 (참고용 · 복사)</label><div class="clause" id="clause_${id}">${esc(clauses(d))}</div>
-      <div style="margin-top:8px"><button class="btn ghost sm" onclick="copyClause(${id})">문구 복사</button> <span class="mut" style="font-size:12px">최종 검토·확정은 변호사</span></div>`;
+      <div style="margin-top:8px"><button class="btn ghost sm" onclick="copyClause(${id})">문구 복사</button> <span class="mut" style="font-size:12px">최종 검토·확정은 변호사</span></div>
+      ${ADMIN&&d.stage>=1?`<div style="margin-top:14px;border-top:1px solid var(--line);padding-top:12px">
+        <label>독소조항 스캐너 <span class="pill" style="background:var(--green-l);color:var(--green)">체험판</span></label>
+        ${d.scanLast?`<div class="ksbox">최근 검사 ${esc(d.scanLast.t)} — 🔴 ${d.scanLast.r} · 🟠 ${d.scanLast.o} · ✚ 누락 ${d.scanLast.miss}</div>`:'<div class="mut" style="font-size:12.5px;margin-bottom:8px">아직 계약 검사를 실행하지 않았습니다.</div>'}
+        <button class="btn ghost sm" onclick="scanSel='${d.id}';scanRes=null;closeSheet();go('scanprev');renderScanPrev()">🔬 계약 검사${d.scanLast?' 다시 하기':' 하기'}</button></div>`:''}`;
   }
   if(curTab==='결제·회수'){
     const n=dday(d.due);
@@ -2121,19 +2270,125 @@ function renderAdminUI(){
   document.getElementById('adminBadge').classList.toggle('hide',!ADMIN);
   document.querySelectorAll('.adminOnly').forEach(el=>el.classList.toggle('hide',!ADMIN));
   const sc=document.getElementById('mnu_scan'),cn=document.getElementById('mnu_connect');
-  if(sc)sc.innerHTML=ADMIN?'<span class="i">🔬</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px;background:var(--amber-l);color:var(--amber)">관리자 미리보기</span>':'<span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span>';
+  if(sc)sc.innerHTML=ADMIN?'<span class="i">🔬</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px;background:var(--green-l);color:var(--green)">체험판</span>':'<span class="i">🔒</span> 독소조항 스캐너 <span class="pill" style="font-size:9.5px">추가 결제 예정</span>';
   if(cn)cn.innerHTML=ADMIN?'<span class="i">🤝</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px;background:var(--amber-l);color:var(--amber)">관리자 미리보기</span>':'<span class="i">🔒</span> 전문가 커넥팅 <span class="pill" style="font-size:9.5px">추가 결제 예정</span>';
 }
 const ADMIN_BANNER='<div class="warnbar" style="border-radius:10px">🔧 관리자 미리보기 — 시연용 화면입니다. 일반 사용자에게는 잠금 상태이며, 결제 기능 도입 후 해제됩니다.</div>';
 /* KB note 오버레이 적용 (문구만 — 매칭 조건·task는 원본 고정) */
 const kbNoteOf=(i,r)=>OVERLAY.kbNotes[i]||r.note;
-/* 관리자 미리보기: 스캐너(실기능 지시서 대기) */
+/* ===== 독소조항 스캐너 화면 (§7 결과 화면 · §8 거래 연동) ===== */
+const SCAN_DISCLAIMER='본 표시는 입력한 계약 문안과 사전 정의된 규칙에 기반한 참고용입니다. 계약의 법적 판단·수정·확정은 변호사가 수행합니다.';
+const SCAN_NOTE='탐지되지 않음 ≠ 안전 — 위험이 없다는 확정이 아니라, 사전에 등록된 패턴에 걸리지 않았다는 뜻입니다.';
+const HITL_LB={fix:'수정 요청하기로 함',keep:'그냥 두기로 함',expert:'전문가 확인 필요'};
+let scanSel='',scanRes=null;
+function scanRun(){
+  const txt=(document.getElementById('scan_text')||{}).value||'';
+  if(!txt.trim()){toast('계약 문안을 붙여넣어 주세요');return;}
+  const d=scanSel?deals.find(x=>String(x.id)===String(scanSel)):null;
+  scanRes=scanContract(txt,d);
+  SCAN_USE.runs++;if(ADMIN)SCAN_USE.adminRuns++;scanUseSave(); /* 체험판 사용량 — 관리자 시연은 별도 집계 */
+  if(d){ /* 거래 연결 검사만 저장(재검사·이력용) */
+    d.scanText=txt;
+    (d.scans=d.scans||[]).push({t:now(),r:scanRes.counts.r,o:scanRes.counts.o,miss:scanRes.counts.miss});
+    d.scanLast={t:scanRes.scannedAt,r:scanRes.counts.r,o:scanRes.counts.o,miss:scanRes.counts.miss};
+    logIt(d,`계약 검사 실행 — 🔴${scanRes.counts.r} · 🟠${scanRes.counts.o} · 누락 ${scanRes.counts.miss}`);
+    save();
+  }
+  render();renderScanPrev();
+}
+/* HITL — 전부 이용자 클릭. [수정 요청]은 이중 확인 후에만 할 일 추가 */
+function scanHitl(key,choice,ruleId,why){
+  const d=scanSel?deals.find(x=>String(x.id)===String(scanSel)):null;
+  scanRes._hitl=scanRes._hitl||{};scanRes._hitl[key]=choice;
+  SCAN_USE.hitl++;if(ADMIN)SCAN_USE.adminHitl++;scanUseSave();
+  if(d){
+    (d.scanDecisions=d.scanDecisions||[]).push({t:now(),rule:ruleId,choice});
+    if(choice==='fix'){
+      if(confirm(`이 항목을 거래 할 일로 추가할까요?\n\n"계약 수정 요청: ${why}"`)){
+        d.tasks=d.tasks||[];
+        d.tasks.push(newTask(d,{title:`계약 수정 요청: ${why}`,track:'계약',stage:Math.min(d.stage,1),req:false,due:addDays(iso(),7),src:'scan'}));
+        logIt(d,`계약 검사 조치 — 할 일 추가(${ruleId})`);toast('할 일에 추가했습니다');
+      }else logIt(d,`계약 검사 조치 — 수정 요청 선택(할 일 추가 안 함, ${ruleId})`);
+    }else if(choice==='expert'){
+      d.expertMemo=d.expertMemo||[];d.expertMemo.push({t:now(),rule:ruleId,why});
+      logIt(d,`계약 검사 조치 — 전문가 확인 필요 메모 저장(${ruleId})`);toast('전문가 상담 준비 메모에 저장했습니다 (자동 연결 없음)');
+    }else logIt(d,`계약 검사 조치 — 그냥 두기(${ruleId})`);
+    save();
+  }
+  render();renderScanPrev();
+}
+/* §4-5 과거 결정 참고 — 같은 바이어의 과거 HITL 기록(판정 불변, 참고 표시만) */
+function pastDecisions(ruleId){
+  const d=scanSel?deals.find(x=>String(x.id)===String(scanSel)):null;if(!d)return null;
+  const nm=String(d.buyer||'').trim();
+  const all=deals.filter(x=>String(x.buyer).trim()===nm).flatMap(x=>(x.scanDecisions||[]).filter(y=>y.rule===ruleId));
+  if(!all.length)return null;
+  const last=all[all.length-1];
+  return{n:all.length,choice:HITL_LB[last.choice]||last.choice};
+}
 function renderScanPrev(){
   const el=document.getElementById('scanprevbody');if(!el)return;
-  el.innerHTML=!ADMIN?emptyBox('🔒','관리자 전용 화면입니다.','',''):ADMIN_BANNER+
-   `<div class="panel"><h2>🔬 독소조항 스캐너</h2>
-    <div class="mut" style="font-size:13px;line-height:1.8">실기능은 별도 지시서(INSTRUCTION_확장_독소조항스캐너.md) 적용 시 이 자리에 열립니다. 현재는 <b>미구현</b>이며, 목업·가짜 판정 결과를 표시하지 않습니다(날조 금지 원칙).</div>
-    <div class="mut" style="font-size:12px;margin-top:8px">예정 구성: 계약 문안 붙여넣기 → 위험 조항 후보 표시(결정론 패턴) → 대안 문구 라이브러리 연결 → "법적 확정은 변호사 확인 필요" 고정.</div></div>`;
+  if(!ADMIN){el.innerHTML=emptyBox('🔒','관리자 전용 화면입니다.','','');return;}
+  const actives=deals.filter(d=>d.stage<5);
+  const R=scanRes;
+  const chip=(ic,n,lb)=>`<span class="pill">${ic} ${lb} ${n}</span>`;
+  const altBtn=(alt,key)=>{const a=scanAltOf(alt);return a?`<button class="btn ghost sm" onclick="scanCopyAlt('${alt}')">대안 복사</button>`:'';};
+  const hitlRow=(key,ruleId,why)=>{const cur=R._hitl&&R._hitl[key];
+    return `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">${Object.keys(HITL_LB).map(k=>`<button class="btn ${cur===k?'sm':'line sm'}" ${cur===k?'style="background:var(--green)"':''} onclick="scanHitl('${key}','${k}','${ruleId}',${JSON.stringify(why).replace(/"/g,'&quot;')})">${cur===k?'✓ ':''}${HITL_LB[k]}</button>`).join('')}</div>`;};
+  el.innerHTML=ADMIN_BANNER+
+   `<div class="panel"><h2>🔬 독소조항 스캐너 <span class="pill">체험판</span></h2>
+    <div class="mut" style="font-size:12.5px;margin-bottom:10px">영문 계약 문안을 붙여넣으면 사전 등록된 규칙으로 위험 조항·누락 조항을 표시합니다. 외부 전송·AI 호출 없이 이 브라우저에서만 판정합니다.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+     <label style="margin:0">검사 대상</label>
+     <select style="width:auto" onchange="scanSel=this.value;scanRes=null;renderScanPrev()">
+      <option value="">거래 없이 검사만</option>
+      ${actives.map(d=>`<option value="${d.id}" ${String(d.id)===String(scanSel)?'selected':''}>${esc(d.buyer)} — ${esc(d.item)}</option>`).join('')}</select>
+     ${scanSel?'<span class="mut" style="font-size:11.5px">결과가 이 거래에 저장됩니다</span>':'<span class="mut" style="font-size:11.5px">저장되지 않고 결과만 표시됩니다</span>'}</div>
+    <textarea id="scan_text" rows="6" placeholder="계약 문안을 붙여넣으세요 (예: 1. Buyer may inspect the goods at any time...)">${esc((scanSel&&(deals.find(x=>String(x.id)===String(scanSel))||{}).scanText)||'')}</textarea>
+    <div style="margin-top:8px"><button class="btn" onclick="scanRun()">🔬 계약 검사하기</button>
+     ${R?'<button class="btn line sm" onclick="scanRes=null;renderScanPrev()">결과 지우기</button>':''}</div></div>
+   ${!R?'':`
+   <div class="panel">
+    ${R.koreanOnly?'<div class="warnbar">영문 계약 전용 체험판입니다 — 한글 문안은 패턴 검사 대상이 아니며, 아래 결과는 "탐지 없음"으로 표시됩니다.</div>':''}
+    ${R.splitFailed?'<div class="warnbar">조항 자동 분리에 실패해 전체 텍스트로 검사했습니다.</div>':''}
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px">${R.counts.r||R.counts.o||R.counts.miss?`🔴 ${R.counts.r}곳 · 🟠 ${R.counts.o}곳 · ✚ 누락 ${R.counts.miss}개 — 수정 요청 후 서명을 권장합니다`:'사전 등록 패턴 기준 특이 조항이 없습니다'}</div>
+    <div style="margin-bottom:10px">${chip('🔴',R.counts.r,'위험')}${chip('🟠',R.counts.o,'주의')}${chip('✚',R.counts.miss,'누락')}${chip('🟢',R.counts.g,'탐지 없음')}</div>
+    <div class="mut" style="font-size:11.5px">${SCAN_NOTE}</div></div>
+
+   ${R.combos.length?`<div class="panel"><h2>⚠ 조합 경고</h2>${R.combos.map(c=>`<div class="warnbar">[${c.id}] ${esc(c.msg)} <span class="mut" style="font-size:11px">(관련: ${c.need.concat(c.miss).join(' + ')})</span></div>`).join('')}</div>`:''}
+
+   ${R.allHits.length?`<div class="panel"><h2>🔴🟠 위험 조항</h2>
+    ${R.clauses.filter(c=>c.hits.length).map(c=>c.hits.map(h=>{const key=c.no+'-'+h.id;const past=pastDecisions(h.id);const g=scanRes.gauge;
+      return `<div style="border-top:1px solid var(--line);padding:12px 0">
+       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge ${h.grade==='r'?'HIGH':'MED'}">${h.grade==='r'?'위험':'주의'}</span><b style="font-size:13.5px">${h.type}</b><span class="pill">${h.id}</span><span class="mut" style="font-size:11.5px">조항 ${c.no}</span></div>
+       <div class="clause" style="margin:7px 0;max-height:90px">${esc(h.excerpt||c.text.slice(0,180))}</div>
+       <div style="font-size:12.5px">${esc(h.why)}</div>
+       ${h.id==='LD-R1'&&g?`<div class="ksbox" style="margin-top:7px">검출 수치: <b>${g.rate}%/${g.unit}</b>${g.norm?` · 통상범위 ${esc(g.norm.통상범위||g.norm.range||'')} <span class="mut" style="font-size:11px">(출처: ${esc(g.norm.출처||g.norm.source||'')}, ${esc(g.norm.기준일||g.norm.asOf||'')} 기준)</span>`:' · <span class="mut">기준표 미탑재 — 통상 대비 평가는 준비 중</span>'}${g.perUnit!==null?`<br>연결 거래 기준 파생 계산: ${g.unit}당 <b>$${g.perUnit.toLocaleString()}</b> · 계약금액 100% 도달까지 <b>${g.unitsTo100}${g.unit}</b>`:''}</div>`:''}
+       ${past?`<div class="mut" style="font-size:11.5px;margin-top:6px">이 바이어와의 과거 검사 ${past.n}건에서 이 항목을 '${esc(past.choice)}'으로 처리했습니다 (참고 — 판정에는 영향 없음)</div>`:''}
+       <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${altBtn(h.alt,key)}</div>
+       ${hitlRow(key,h.id,h.why)}</div>`;}).join('')).join('')}</div>`:''}
+
+   ${R.missing.length?`<div class="panel"><h2>✚ 누락 조항</h2>
+    ${R.missing.map(m=>{const key='miss-'+m.id;const past=pastDecisions(m.id);
+     return `<div style="border-top:1px solid var(--line);padding:12px 0">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge MED">누락</span><b style="font-size:13.5px">${esc(m.name)}</b><span class="pill">${m.id}</span></div>
+      <div style="font-size:12.5px;margin-top:5px">${esc(m.risk)}</div>
+      ${past?`<div class="mut" style="font-size:11.5px;margin-top:6px">이 바이어와의 과거 검사 ${past.n}건에서 이 항목을 '${esc(past.choice)}'으로 처리했습니다 (참고 — 판정에는 영향 없음)</div>`:''}
+      <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${altBtn(m.alt,key)}</div>
+      ${hitlRow(key,m.id,m.name+' 조항 추가')}</div>`;}).join('')}</div>`:''}
+
+   ${R.clauses.filter(c=>!c.hits.length).length?`<div class="panel"><h2>🟢 탐지 항목 없음 (${R.clauses.filter(c=>!c.hits.length).length}개 조항)</h2>
+    ${R.clauses.filter(c=>!c.hits.length).slice(0,8).map(c=>`<div class="mut" style="font-size:12px;padding:5px 0;border-top:1px solid var(--line)">조항 ${c.no} — ${esc(c.text.slice(0,120))}${c.text.length>120?'…':''}</div>`).join('')}</div>`:''}
+
+   ${scanSel&&(deals.find(x=>String(x.id)===String(scanSel))||{}).scans&&(deals.find(x=>String(x.id)===String(scanSel))).scans.length>1?`<div class="panel"><h2>📈 재검사 이력</h2><div style="font-size:13px">${(deals.find(x=>String(x.id)===String(scanSel))).scans.map((s,i)=>`${i+1}차 🔴${s.r}`).join(' → ')}</div></div>`:''}
+
+   <div class="panel mut" style="font-size:12px">${SCAN_DISCLAIMER}</div>`}`;
+}
+function scanCopyAlt(id){
+  const a=scanAltOf(id);if(!a){toast('대안 문구를 불러오지 못했습니다 (라이브러리 미탑재)');return;}
+  const ov=(OVERLAY.clauseLib||{})[id]; /* 관리자 콘솔 편집분 반영 (원본 파일 불변) */
+  copyText(`[${a.title}]\n[국문] ${ov&&ov.text!==undefined?ov.text:a.ko}\n\n[English] ${a.en}\n\n※ ${CLAUSE_LIB.tail||'법적 확정은 변호사 확인 필요'}`);
+  toast('대안 문구가 복사되었습니다 — 법적 확정은 변호사 확인 필요');
 }
 /* 관리자 미리보기: 전문가 커넥팅 (목업 + 실동작은 '거래 맥락 요약'만 — 전부 원장 데이터) */
 function ctxSummary(id){
@@ -2174,6 +2429,8 @@ function renderAdminConsole(){
     <tr><td>파일럿 이메일</td><td>${FEEDBACK.emails.length?FEEDBACK.emails.map(e=>esc(e.m)).join('<br>'):'없음'}</td></tr>
     <tr><td>OECD 데이터</td><td>${OECD_LIST.length}개국 · ${esc(OECD_META.dataVersion)} 기준${oecdStaleBadge()}</td></tr>
     <tr><td>K-SURE 수기 데이터</td><td>${KS_KINDS.map(k=>`${KS_LABEL[k]} ${KSURE_DATA[k].length}건 (${ksVer(k)||'미탑재'})`).join('<br>')}</td></tr>
+    <tr><td>스캐너 사용량 (체험판)</td><td>검사 ${SCAN_USE.runs}회 (관리자 시연 ${SCAN_USE.adminRuns}회 포함) · HITL 처리 ${SCAN_USE.hitl}건 (관리자 ${SCAN_USE.adminHitl}건)<br><span class="mut" style="font-size:11px">실수요 = 전체 − 관리자: 검사 ${Math.max(0,SCAN_USE.runs-SCAN_USE.adminRuns)}회 · 처리 ${Math.max(0,SCAN_USE.hitl-SCAN_USE.adminHitl)}건</span></td></tr>
+    <tr><td>스캐너 데이터</td><td>대안 문구 ${Object.keys(CLAUSE_LIB.items||{}).length}종 · 통상범위 기준표 ${(CLAUSE_NORMS.items||[]).length}건${(CLAUSE_NORMS.items||[]).length?'':' <span class="mut">(출처 미확인 — 게이지는 대체 문구로 동작)</span>'} · 근거 사례 ${(CLAUSE_CASES.items||[]).length}건</td></tr>
     <tr><td>회귀 테스트</td><td>${qa.filter(t=>t.pass).length}/${qa.length} 통과</td></tr></tbody></table>
     <div style="margin-top:10px"><button class="btn line sm" onclick="exportJSON()">전체 집계 JSON 내보내기 (오버레이 포함)</button></div></div>
    <div class="panel"><h2>✏️ 콘텐츠 편집 (허용 목록 한정 — 오버레이 저장, 삭제 시 원본 복원)</h2>
@@ -2181,7 +2438,11 @@ function renderAdminConsole(){
     <div style="max-height:220px;overflow:auto;margin-bottom:12px">${KB_RULES.map((r,i)=>`<div style="display:flex;gap:6px;margin-bottom:5px;font-size:12px"><span class="pill" style="flex-shrink:0">${i}</span><input value="${esc(kbNoteOf(i,r))}" onchange="OVERLAY.kbNotes[${i}]=this.value;overlaySave();render()" style="font-size:12px;padding:5px 8px">${OVERLAY.kbNotes[i]?`<button class="btn line sm" onclick="delete OVERLAY.kbNotes[${i}];overlaySave();render()">원본</button>`:''}</div>`).join('')}</div>
     <label>티저 소개 문구 (줄바꿈 = 3줄)</label>
     ${['scan','connect'].map(k=>`<div style="margin-bottom:8px"><span class="pill">${k==='scan'?'독소조항 스캐너':'전문가 커넥팅'}</span><textarea rows="3" style="font-size:12px;margin-top:4px" onchange="OVERLAY.teaser['${k}']=this.value.split('\\n');overlaySave()">${esc((OVERLAY.teaser[k]||[]).join('\n'))}</textarea></div>`).join('')}
-    <label>대안 문구 라이브러리</label><div class="mut" style="font-size:12px;margin-bottom:10px">스캐너 지시서 적용 후 활성화됩니다.</div>
+    <label>대안 문구 라이브러리 (${Object.keys(CLAUSE_LIB.items||{}).length}종 — 꼬리표 "${esc(CLAUSE_LIB.tail||'')}"는 편집 불가 고정)</label>
+    <div style="max-height:200px;overflow:auto;margin-bottom:12px">${Object.keys(CLAUSE_LIB.items||{}).map(k=>{const it=CLAUSE_LIB.items[k];const ov=(OVERLAY.clauseLib||{})[k]||{};
+      return `<div style="display:flex;gap:6px;margin-bottom:5px;font-size:12px;align-items:center"><span class="pill" style="flex-shrink:0">${k}</span>
+       <input value="${esc(ov.text!==undefined?ov.text:it.ko)}" onchange="OVERLAY.clauseLib=OVERLAY.clauseLib||{};OVERLAY.clauseLib['${k}']={text:this.value,disabled:${!!ov.disabled}};overlaySave();render()" style="font-size:12px;padding:5px 8px">
+       ${ov.text!==undefined?`<button class="btn line sm" onclick="delete OVERLAY.clauseLib['${k}'];overlaySave();render()">원본</button>`:''}</div>`;}).join('')||'<span class="mut" style="font-size:12px">라이브러리 미탑재(직접 파일 열기 환경)</span>'}</div>
     <label>공지 관리 (자료·가이드와 동일 기능)</label><div id="noticesAdmin"></div>
     <div class="mut" style="font-size:12px;margin-top:8px">거래 정책·리스크 규칙 사용/미사용은 기존 화면에서: <span class="dc" onclick="go('policy')">거래 정책</span> · <span class="dc" onclick="go('rules')">리스크 규칙</span></div></div>
    <div class="panel"><h2>🔒 판정 로직 (읽기 전용)</h2>
@@ -2386,7 +2647,7 @@ function resetAll(){
 /* 예시 데이터 opt-in */
 function loadSamples(){if(deals.some(d=>d.sample)){toast('예시 데이터가 이미 있습니다');return;}seedData();render();toast('예시 거래 4건을 넣었습니다 — 언제든 삭제할 수 있습니다');}
 function removeSamples(){const n=deals.filter(d=>d.sample).length;if(!n){toast('삭제할 예시가 없습니다');return;}if(confirm(`예시 거래 ${n}건을 삭제할까요? (직접 등록한 거래는 유지됩니다)`)){deals=deals.filter(d=>!d.sample);render();toast('예시를 삭제했습니다');}}
-uiLoad();adminLoad();ksureLoad();oecdLoad();
+uiLoad();adminLoad();ksureLoad();oecdLoad();scanLoad();
 load(); /* 클린 스타트: 예시 데이터는 자동 생성하지 않음 — [예시 데이터 넣어보기]로만 (opt-in) */
 deals.forEach(syncKbTasks); /* 기존 저장 데이터에 KB 규칙 반영 (마이그레이션) */
 /* §2-3·§2-5-5 신청 상태 이관 + 신용확인 정합성 조정 (둘 다 멱등) */

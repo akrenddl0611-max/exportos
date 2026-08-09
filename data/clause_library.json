@@ -1,0 +1,87 @@
+{
+  "version": "1",
+  "note": "대안 문구 라이브러리 — 표준적 취지의 자체 문안. 특정 문헌 문장을 복제하지 않음. 모든 항목에 변호사 확인 꼬리표 고정.",
+  "tail": "법적 확정은 변호사 확인 필요",
+  "items": {
+    "#INS-03": {
+      "title": "검사 기간·거절 사유 한정",
+      "ko": "검사 기간을 도착일로부터 일정 기간(예: 14일)으로 한정하고, 거절은 계약서에 명시된 규격 불일치 등 객관적 사유가 있는 경우로 제한합니다. 기간 내 통지가 없으면 인수된 것으로 봅니다.",
+      "en": "The Buyer shall complete inspection within fourteen (14) days from arrival of the goods and may reject the goods only for non-conformity with the specifications expressly set out in this Contract, supported by documentary evidence. Absent written notice within such period, the goods shall be deemed accepted."
+    },
+    "#LD-02": {
+      "title": "지체상금 상한·면책 연동",
+      "ko": "지체상금의 요율과 총 상한을 명시하고, 불가항력·매수인 귀책으로 인한 지연은 산정 기간에서 제외합니다.",
+      "en": "Liquidated damages for delayed delivery shall accrue at the rate agreed herein and shall not, in aggregate, exceed a stated percentage of the contract price. Periods of delay caused by force majeure or by the Buyer's acts or omissions shall be excluded from the calculation."
+    },
+    "#LIA-01": {
+      "title": "간접손해 배제·책임 상한",
+      "ko": "간접손해·결과적 손해·일실이익에 대한 책임을 배제하고, 총 배상책임을 해당 계약금액 범위로 제한합니다.",
+      "en": "Neither party shall be liable for indirect, incidental, special or consequential damages, or for loss of profit. Each party's aggregate liability arising out of or in connection with this Contract shall not exceed the price of the goods giving rise to the claim."
+    },
+    "#PAY-01": {
+      "title": "결제 안전장치",
+      "ko": "선수금 확보, 신용장 전환, 또는 수출보험 가입 중 하나 이상을 결제조건에 반영합니다.",
+      "en": "Payment shall be secured by one or more of the following: an advance payment of an agreed percentage prior to production; an irrevocable letter of credit issued by a bank acceptable to the Seller; or export credit insurance covering the receivable."
+    },
+    "#WAR-01": {
+      "title": "보증기간 한정",
+      "ko": "보증기간을 통상 범위로 한정하고, 정상적 사용 범위를 벗어난 사용·보관·개조에 대해서는 보증을 배제합니다.",
+      "en": "The warranty period shall be twelve (12) months from delivery. The warranty shall not apply to defects arising from improper handling, storage, modification or use outside the agreed conditions."
+    },
+    "#JUR-01": {
+      "title": "중립 분쟁해결지",
+      "ko": "상대국 법원 전속관할 대신 중재를 채택하거나, 관할을 대한민국 또는 중립 제3지로 합의합니다.",
+      "en": "Any dispute arising out of or in connection with this Contract shall be finally settled by arbitration under the rules of a mutually agreed arbitral institution, with the seat of arbitration in Seoul, Republic of Korea, or in a neutral third jurisdiction agreed by the parties."
+    },
+    "#TER-01": {
+      "title": "해지 사유·통지 요건",
+      "ko": "임의 해지권 대신 중대한 계약 위반이 시정기간 내 치유되지 않은 경우로 해지 사유를 한정하고, 서면 통지를 요건으로 합니다.",
+      "en": "Either party may terminate this Contract only upon a material breach by the other party which remains uncured for thirty (30) days after written notice specifying the breach. Termination for convenience shall require the prior written consent of both parties."
+    },
+    "#ASN-01": {
+      "title": "양도 제한 상호주의",
+      "ko": "계약상 권리·의무의 양도는 상대방의 사전 서면 동의를 요건으로 하며, 양 당사자에게 동일하게 적용합니다.",
+      "en": "Neither party may assign or transfer this Contract, in whole or in part, without the prior written consent of the other party, such consent not to be unreasonably withheld."
+    },
+    "#IPR-01": {
+      "title": "지재권 면책 범위 한정",
+      "ko": "지재권 면책 의무를 매도인이 제공한 사양에 기인한 청구로 한정하고, 매수인이 지정한 사양·상표에 기인한 청구는 매수인이 부담하도록 합니다.",
+      "en": "The Seller's indemnity for intellectual property infringement shall be limited to claims arising from the Seller's own design or specifications. Claims arising from designs, trademarks or specifications furnished by the Buyer shall be indemnified by the Buyer."
+    },
+    "#SET-01": {
+      "title": "임의 상계 금지",
+      "ko": "확정되지 않은 채권으로 대금을 임의 공제·상계하지 못하도록 하고, 상계는 양측이 서면으로 확정한 금액에 한정합니다.",
+      "en": "The Buyer shall not set off, deduct or withhold any amount from the payment due hereunder, except for amounts finally agreed in writing by both parties or established by a final award or judgment."
+    },
+    "#FM-01": {
+      "title": "불가항력",
+      "ko": "천재지변·전쟁·수출입 규제 등 당사자의 통제를 벗어난 사유로 인한 이행 지연·불능에 대해 책임을 면제하고, 통지 의무와 장기 지속 시 해지권을 규정합니다.",
+      "en": "Neither party shall be liable for delay or failure to perform caused by events beyond its reasonable control, including acts of God, war, epidemic, or governmental restrictions. The affected party shall notify the other without undue delay; if the event continues for more than ninety (90) days, either party may terminate the affected part of this Contract."
+    },
+    "#ROT-01": {
+      "title": "소유권 유보",
+      "ko": "매매대금이 완납될 때까지 물품의 소유권은 매도인에게 유보됩니다.",
+      "en": "Title to the goods shall remain with the Seller until the purchase price has been paid in full, notwithstanding delivery or passing of risk."
+    },
+    "#CLM-01": {
+      "title": "클레임 제기기한",
+      "ko": "하자 클레임은 도착일로부터 일정 기간(예: 14일) 내에 근거자료와 함께 서면으로 제기하도록 하고, 기한 경과 시 권리를 상실하도록 합니다.",
+      "en": "Any claim relating to the quality or quantity of the goods shall be notified in writing, together with supporting evidence, within fourteen (14) days from arrival; failing which the Buyer shall be deemed to have waived such claim."
+    },
+    "#LAW-01": {
+      "title": "준거법",
+      "ko": "준거법을 명시합니다(예: 대한민국 법 또는 CISG 적용 여부 명확화).",
+      "en": "This Contract shall be governed by and construed in accordance with the laws of the Republic of Korea. The application of the United Nations Convention on Contracts for the International Sale of Goods shall be expressly addressed by the parties."
+    },
+    "#ARB-01": {
+      "title": "분쟁해결 절차",
+      "ko": "분쟁해결 방법(중재 또는 관할법원), 기관, 장소, 언어를 명시합니다.",
+      "en": "Any dispute arising out of or in connection with this Contract shall be finally settled by arbitration administered by an agreed arbitral institution, with the seat in Seoul, in the English language."
+    },
+    "#INC-01": {
+      "title": "인도조건(인코텀즈)",
+      "ko": "인코텀즈 규칙과 판(예: Incoterms 2020) 및 지정 장소를 명시해 위험·비용 이전 시점을 확정합니다.",
+      "en": "Delivery shall be made on the agreed Incoterms rule with the named place expressly stated, e.g. \"FOB Busan (Incoterms 2020)\", determining the point of transfer of risk and costs."
+    }
+  }
+}
